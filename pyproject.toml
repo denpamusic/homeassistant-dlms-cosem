@@ -1,0 +1,61 @@
+[tool.pylint.MASTER]
+py-version = "3.8"
+ignore = [
+    "tests",
+]
+jobs = 2
+
+[tool.pylint.BASIC]
+good-names = [
+    "_",
+    "i",
+    "e",
+    "j",
+    "k",
+    "m",
+    "v",
+    "ip",
+    "dr",
+]
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "unused-argument",
+    "too-many-instance-attributes",
+    "duplicate-code",
+]
+
+[tool.black]
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
+force_sort_within_sections = true
+combine_as_imports = true
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = [
+    '^.github/',
+    '^.git/',
+    '^images/',
+    '^tests/',
+]
+
+# Avoid unexpected keyword argument error in config_flow.py
+disable_error_code = "call-arg"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.flake8]
+exclude = ".git,.mypy_cache"
+max-complexity = 25
+ignore = [
+    "E501",
+    "W503",
+    "E203",
+    "D202",
+    "W504",
+]
+noqa-require-code = true

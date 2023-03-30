@@ -1,0 +1,25 @@
+{
+    "config": {
+        "error": {
+            "cannot_connect": "Ошибка подключения",
+            "unknown": "Неопознанная ошибка"
+        },
+        "abort": {
+            "already_configured": "Устройство уже настроено",
+            "indentify_failed": "Ошибка определения устройства, попробуйте позже"
+        },
+        "progress": {
+            "identify_device": "Определяем устройство..."
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "host": "Хост",
+                    "port": "Порт",
+                    "physical_address": "Физический адрес",
+                    "password": "Пароль"
+                }
+            }
+        }
+    }
+}

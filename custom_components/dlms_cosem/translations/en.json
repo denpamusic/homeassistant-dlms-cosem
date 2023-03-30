@@ -1,0 +1,25 @@
+{
+    "config": {
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "unknown": "Unexpected error"
+        },
+        "abort": {
+            "already_configured": "Device is already configured",
+            "indentify_failed": "Device identfication failed, try again"
+        },
+        "progress": {
+            "identify_device": "Identifying device..."
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "host": "Host",
+                    "port": "Port",
+                    "physical_address": "Physical address",
+                    "password": "Password"
+                }
+            }
+        }
+    }
+}
