@@ -103,11 +103,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         async def _identify_device():
             try:
-                logical_device_name = await async_get_logical_device_name(
-                    self.hass, self.client
-                )
                 self.manufacturer, self.model = async_parse_logical_device_name(
-                    logical_device_name
+                    await async_get_logical_device_name(self.hass, self.client)
                 )
                 self.equipment_id = await async_get_equipment_id(self.hass, self.client)
                 sw_version = await async_get_sw_version(self.hass, self.client)

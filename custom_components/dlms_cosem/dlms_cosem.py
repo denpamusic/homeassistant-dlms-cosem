@@ -1,4 +1,4 @@
-"""Contains DLMS connection class."""
+"""Contains the DLMS connection class."""
 from __future__ import annotations
 
 import asyncio
@@ -134,7 +134,7 @@ class DlmsConnection:
         self._hass = hass
 
     async def async_setup(self) -> None:
-        """Asyncronously setups the DLMS connection."""
+        """Setup the DLMS connection."""
         await self._hass.async_add_executor_job(self.client.connect)
         await self._hass.async_add_executor_job(self.client.associate)
         self._reconnect_task = asyncio.create_task(self._reconnect_on_failure())
@@ -210,7 +210,7 @@ class DlmsConnection:
     async def async_check(
         cls, hass: HomeAssistant, data: MutableMapping[str, Any]
     ) -> DlmsClient:
-        """Try to initiate connection to the DLMS meter."""
+        """Checks connection to the DLMS meter."""
         client = async_get_dlms_client(data)
         await hass.async_add_executor_job(client.connect)
         await hass.async_add_executor_job(client.associate)

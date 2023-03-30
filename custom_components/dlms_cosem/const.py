@@ -1,4 +1,4 @@
-"""Contains constants for DLMS integration."""
+"""Contains constants for the DLMS integration."""
 from __future__ import annotations
 
 from enum import Enum, unique
@@ -9,13 +9,13 @@ DOMAIN: Final = "dlms_cosem"
 # Attributes
 ATTR_DATA: Final = "data"
 
-# Configuration.
+# Configuration
 CONF_HOST: Final = "host"
 CONF_PORT: Final = "port"
 CONF_PASSWORD: Final = "password"
 CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 
-# Defaults.
+# Configuration defaults
 DEFAULT_PORT: Final = 23
 DEFAULT_PASSWORD: Final = "111111"
 

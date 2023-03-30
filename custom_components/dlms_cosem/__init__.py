@@ -1,4 +1,4 @@
-"""The DLMS meter integration."""
+"""The DLMS integration."""
 from __future__ import annotations
 
 from dlms_cosem.exceptions import CommunicationError
