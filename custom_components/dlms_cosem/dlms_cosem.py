@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import MutableMapping
+import json
 import logging
+from pathlib import Path
 from typing import Any, Final
 
+import aiofiles
 from dlms_cosem import a_xdr, cosem, enumerations
 from dlms_cosem.client import DlmsClient
 from dlms_cosem.exceptions import CommunicationError
@@ -24,8 +27,9 @@ from .const import (
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     DOMAIN,
-    Manufacturer,
 )
+
+DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 
 RECONNECT_DELAY: Final = 3
 
@@ -78,20 +82,31 @@ def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
     )
 
 
-def async_parse_logical_device_name(logical_device_name: str) -> tuple[str, str]:
-    """Parse logical device name."""
-    manufacturer_code = logical_device_name[0:3]
+async def async_decode_flag_id(flag_id: str) -> str:
+    """Decodes flag id."""
+    dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
+
+    async with aiofiles.open(dlms_flag_ids_file, mode="r", encoding="utf-8") as f:
+        contents = await f.read()
+
+    flagids = json.loads(contents)
+    return flagids[flag_id]
+
+
+async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
+    """Decodes logical device name."""
+    flag_id = logical_device_name[0:3]
     model: str = "Smart meter"
 
     try:
-        manufacturer = Manufacturer(manufacturer_code)
+        manufacturer = await async_decode_flag_id(flag_id)
     except KeyError:
         return "unknown", model
 
-    if manufacturer == Manufacturer.INC:
+    if flag_id == "INC":
         model = f"Mercury {logical_device_name[3:6]}"
 
-    return manufacturer.value, model
+    return manufacturer, model
 
 
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:

@@ -27,10 +27,10 @@ from .const import (
 )
 from .dlms_cosem import (
     DlmsConnection,
+    async_decode_logical_device_name,
     async_get_equipment_id,
     async_get_logical_device_name,
     async_get_sw_version,
-    async_parse_logical_device_name,
 )
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
@@ -103,7 +103,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         async def _identify_device():
             try:
-                self.manufacturer, self.model = async_parse_logical_device_name(
+                self.manufacturer, self.model = await async_decode_logical_device_name(
                     await async_get_logical_device_name(self.hass, self.client)
                 )
                 self.equipment_id = await async_get_equipment_id(self.hass, self.client)
