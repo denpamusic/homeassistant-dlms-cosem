@@ -288,8 +288,7 @@ async def async_setup_entry(
     """Set up the sensor platform."""
     connection: DlmsConnection = hass.data[DOMAIN][config_entry.entry_id]
     async_add_entities(
-        [DlmsSensor(connection, description) for description in SENSOR_TYPES],
-        update_before_add=True,
+        DlmsSensor(connection, description) for description in SENSOR_TYPES
     )
 
     return True
