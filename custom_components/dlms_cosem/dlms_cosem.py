@@ -127,6 +127,12 @@ async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str
     return AXDR_DECODER.decode(response)[ATTR_DATA]
 
 
+def _connect_and_associate(client: DlmsClient):
+    """Connects and associates the client."""
+    client.connect()
+    client.associate()
+
+
 class DlmsConnection:
     """Represents DLMS connection."""
 
@@ -150,9 +156,12 @@ class DlmsConnection:
 
     async def async_setup(self) -> None:
         """Setup the DLMS connection."""
-        await self._hass.async_add_executor_job(self.client.connect)
-        await self._hass.async_add_executor_job(self.client.associate)
+        await self.async_connect()
         self._reconnect_task = asyncio.create_task(self._reconnect_on_failure())
+
+    async def async_connect(self) -> None:
+        """Asyncronously connect to DLMS server."""
+        await self._hass.async_add_executor_job(_connect_and_associate, self.client)
 
     async def _reconnect_on_failure(self) -> None:
         """Task to initiate reconnect on the connection failure."""
@@ -160,8 +169,7 @@ class DlmsConnection:
             await self.disconnected.wait()
             try:
                 self.client = async_get_dlms_client(self.entry.data)
-                await self._hass.async_add_executor_job(self.client.connect)
-                await self._hass.async_add_executor_job(self.client.associate)
+                await self.async_connect()
                 self.disconnected.clear()
             except CommunicationError:
                 await asyncio.sleep(RECONNECT_DELAY)
@@ -227,6 +235,5 @@ class DlmsConnection:
     ) -> DlmsClient:
         """Checks connection to the DLMS meter."""
         client = async_get_dlms_client(data)
-        await hass.async_add_executor_job(client.connect)
-        await hass.async_add_executor_job(client.associate)
+        await hass.async_add_executor_job(_connect_and_associate, client)
         return client
