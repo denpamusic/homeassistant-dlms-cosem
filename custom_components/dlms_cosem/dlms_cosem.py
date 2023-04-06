@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import MutableMapping
+from functools import lru_cache
 import json
 import logging
 from pathlib import Path
@@ -82,6 +83,7 @@ def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
     )
 
 
+@lru_cache(maxsize=5)
 async def async_decode_flag_id(flag_id: str) -> str:
     """Decodes flag id."""
     dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
