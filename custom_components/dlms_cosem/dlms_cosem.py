@@ -5,7 +5,6 @@ import asyncio
 from collections.abc import MutableMapping
 from datetime import timedelta
 from functools import lru_cache
-import json
 import logging
 from pathlib import Path
 from typing import Any, Final
@@ -20,6 +19,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+import ijson
 import structlog
 
 from .const import (
@@ -93,10 +93,11 @@ async def async_decode_flag_id(flag_id: str) -> str:
     dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
 
     async with aiofiles.open(dlms_flag_ids_file, encoding="utf-8") as f:
-        contents = await f.read()
+        async for key, value in ijson.kvitems_async(f, ""):
+            if key == flag_id:
+                return value
 
-    flagids = json.loads(contents)
-    return flagids[flag_id]
+    raise KeyError
 
 
 async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
