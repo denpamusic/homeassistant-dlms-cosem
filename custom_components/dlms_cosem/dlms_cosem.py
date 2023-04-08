@@ -33,7 +33,7 @@ from .const import (
 
 DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 
-RECONNECT_INTERVAL: Final = timedelta(seconds=3)
+RECONNECT_INTERVAL: Final = timedelta(seconds=5)
 
 AXDR_DECODER = a_xdr.AXdrDecoder(
     encoding_conf=a_xdr.EncodingConf(
