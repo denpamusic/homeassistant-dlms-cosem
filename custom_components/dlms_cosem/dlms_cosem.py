@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import MutableMapping
+from datetime import timedelta
 from functools import lru_cache
 import json
 import logging
@@ -32,7 +33,7 @@ from .const import (
 
 DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 
-RECONNECT_DELAY: Final = 3
+RECONNECT_INTERVAL: Final = timedelta(seconds=3)
 
 AXDR_DECODER = a_xdr.AXdrDecoder(
     encoding_conf=a_xdr.EncodingConf(
@@ -174,7 +175,7 @@ class DlmsConnection:
                 await self.async_connect()
                 self.disconnected.clear()
             except CommunicationError:
-                await asyncio.sleep(RECONNECT_DELAY)
+                await asyncio.sleep(RECONNECT_INTERVAL.total_seconds())
 
     def get(self, attribute: cosem.CosemAttribute):
         """Get the attribute."""
