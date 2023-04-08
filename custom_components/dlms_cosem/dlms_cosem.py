@@ -33,6 +33,9 @@ from .const import (
 
 DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 
+LOGICAL_CLIENT_ADDRESS: Final = 32
+LOGICAL_SERVER_ADDRESS: Final = 1
+
 RECONNECT_INTERVAL: Final = timedelta(seconds=5)
 
 AXDR_DECODER = a_xdr.AXdrDecoder(
@@ -70,8 +73,8 @@ def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
     """Gets the DLMS client."""
     tcp_io = BlockingTcpIO(host=data[CONF_HOST], port=data[CONF_PORT], timeout=10)
     hdlc_transport = HdlcTransport(
-        client_logical_address=32,
-        server_logical_address=1,
+        client_logical_address=LOGICAL_CLIENT_ADDRESS,
+        server_logical_address=LOGICAL_SERVER_ADDRESS,
         server_physical_address=data[CONF_PHYSICAL_ADDRESS],
         io=tcp_io,
     )
@@ -89,7 +92,7 @@ async def async_decode_flag_id(flag_id: str) -> str:
     """Decodes flag id."""
     dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
 
-    async with aiofiles.open(dlms_flag_ids_file, mode="r", encoding="utf-8") as f:
+    async with aiofiles.open(dlms_flag_ids_file, encoding="utf-8") as f:
         contents = await f.read()
 
     flagids = json.loads(contents)
