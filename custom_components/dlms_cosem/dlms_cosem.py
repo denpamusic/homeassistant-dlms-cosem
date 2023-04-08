@@ -115,19 +115,22 @@ async def async_decode_logical_device_name(logical_device_name: str) -> tuple[st
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
     """Gets the logical device name."""
     response = await hass.async_add_executor_job(client.get, LOGICAL_DEVICE_NAME)
-    return AXDR_DECODER.decode(response)[ATTR_DATA].decode("utf-8")
+    data = await hass.async_add_executor_job(AXDR_DECODER.decode, response)
+    return data[ATTR_DATA].decode("utf-8")
 
 
 async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
     """Gets the software version."""
     response = await hass.async_add_executor_job(client.get, SOFTWARE_PACKAGE)
-    return AXDR_DECODER.decode(response)[ATTR_DATA]
+    data = await hass.async_add_executor_job(AXDR_DECODER.decode, response)
+    return data[ATTR_DATA]
 
 
 async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str:
     """Gets the equipment identifier."""
     response = await hass.async_add_executor_job(client.get, EQUIPMENT_ID)
-    return AXDR_DECODER.decode(response)[ATTR_DATA]
+    data = await hass.async_add_executor_job(AXDR_DECODER.decode, response)
+    return data[ATTR_DATA]
 
 
 def _connect_and_associate(client: DlmsClient):
