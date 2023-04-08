@@ -31,7 +31,6 @@ from .const import (
 )
 
 DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
-
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 
