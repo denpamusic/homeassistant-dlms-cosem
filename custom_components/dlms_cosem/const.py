@@ -17,3 +17,6 @@ CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 # Configuration defaults
 DEFAULT_PORT: Final = 23
 DEFAULT_PASSWORD: Final = "111111"
+
+# Dispatcher signals.
+SIGNAL_RECONNECTED: Final = "reconnected"

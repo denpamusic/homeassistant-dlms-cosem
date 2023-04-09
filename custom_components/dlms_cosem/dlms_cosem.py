@@ -17,6 +17,7 @@ from dlms_cosem.security import LowLevelSecurityAuthentication
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity import DeviceInfo
 import ijson
 import structlog
@@ -28,6 +29,7 @@ from .const import (
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     DOMAIN,
+    SIGNAL_RECONNECTED,
 )
 
 DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
@@ -178,6 +180,7 @@ class DlmsConnection:
                 self.client = async_get_dlms_client(self.entry.data)
                 await self.async_connect()
                 self.disconnected.clear()
+                async_dispatcher_send(self._hass, SIGNAL_RECONNECTED)
             except CommunicationError:
                 await asyncio.sleep(RECONNECT_INTERVAL.total_seconds())
 

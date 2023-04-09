@@ -21,13 +21,16 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfTemperature,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import Throttle
 
-from .const import DOMAIN
+from .const import DOMAIN, SIGNAL_RECONNECTED
 from .dlms_cosem import DlmsConnection
 
-SCAN_INTERVAL = timedelta(seconds=10)
+SCAN_INTERVAL = timedelta(seconds=15)
+MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 PARALLEL_UPDATES = 1
 
 
@@ -251,8 +254,8 @@ class CosemSensor(SensorEntity):
         self.entity_description = description
         self._attr_device_info = connection.device_info
         self._attr_unique_id = f"{connection.entry.unique_id}-{description.key}"
-        self._connection._hass.bus()
 
+    @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self) -> None:
         """Update entity state."""
         response = self._connection.get(
@@ -265,6 +268,11 @@ class CosemSensor(SensorEntity):
         self._attr_native_value = (
             response if response is None else self.entity_description.value_fn(response)
         )
+
+    @callback
+    def async_schedule_update_after_reconnect(self) -> None:
+        """Schedules update after the reconnect."""
+        self.async_schedule_update_ha_state(True)
 
     @property
     def available(self) -> bool:
@@ -279,8 +287,14 @@ async def async_setup_entry(
 ) -> bool:
     """Set up the sensor platform."""
     connection: DlmsConnection = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities(
+    entities: list[CosemSensor] = [
         CosemSensor(connection, description) for description in SENSOR_TYPES
-    )
+    ]
 
+    for entity in entities:
+        async_dispatcher_connect(
+            hass, SIGNAL_RECONNECTED, entity.async_schedule_update_after_reconnect
+        )
+
+    async_add_entities(entities, update_before_add=True)
     return True
