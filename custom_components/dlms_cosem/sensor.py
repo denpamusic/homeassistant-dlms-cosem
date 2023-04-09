@@ -22,7 +22,6 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -250,6 +249,9 @@ class CosemSensor(SensorEntity):
         """Initialize the COSEM sensor object."""
         self._connection = connection
         self.entity_description = description
+        self._attr_device_info = connection.device_info
+        self._attr_unique_id = f"{connection.entry.unique_id}-{description.key}"
+        self._connection._hass.bus()
 
     def update(self) -> None:
         """Update entity state."""
@@ -263,16 +265,6 @@ class CosemSensor(SensorEntity):
         self._attr_native_value = (
             response if response is None else self.entity_description.value_fn(response)
         )
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-        return self._connection.device_info
-
-    @property
-    def unique_id(self) -> str:
-        """A unique identifier for this entity."""
-        return f"{self._connection.entry.unique_id}-{self.entity_description.key}"
 
     @property
     def available(self) -> bool:
