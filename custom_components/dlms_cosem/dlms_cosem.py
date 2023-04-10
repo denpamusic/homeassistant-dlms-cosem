@@ -180,6 +180,7 @@ class DlmsConnection:
 
     async def _reconnect_on_failure(self) -> None:
         """Task to initiate reconnect on the connection failure."""
+        reconnect_interval = RECONNECT_INTERVAL.total_seconds()
         while True:
             await self.disconnected.wait()
             _LOGGER.warning("Connection lost, reconnecting...")
@@ -191,12 +192,12 @@ class DlmsConnection:
             except CommunicationError:
                 _LOGGER.warning(
                     "Reconnect attempt failed, retrying in %d seconds...",
-                    RECONNECT_INTERVAL.total_seconds(),
+                    reconnect_interval,
                 )
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
             finally:
-                await asyncio.sleep(RECONNECT_INTERVAL.total_seconds())
+                await asyncio.sleep(reconnect_interval)
 
     def get(self, attribute: cosem.CosemAttribute):
         """Get the attribute."""
