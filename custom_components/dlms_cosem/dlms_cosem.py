@@ -117,29 +117,33 @@ async def async_decode_logical_device_name(logical_device_name: str) -> tuple[st
 
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
     """Gets the logical device name."""
-    response = await hass.async_add_executor_job(client.get, LOGICAL_DEVICE_NAME)
-    data = await hass.async_add_executor_job(AXDR_DECODER.decode, response)
-    return data[ATTR_DATA].decode("utf-8")
+    data = await hass.async_add_executor_job(
+        _get_attribute, client, LOGICAL_DEVICE_NAME
+    )
+    return data.decode("utf-8")
 
 
 async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
     """Gets the software version."""
-    response = await hass.async_add_executor_job(client.get, SOFTWARE_PACKAGE)
-    data = await hass.async_add_executor_job(AXDR_DECODER.decode, response)
-    return data[ATTR_DATA]
+    return await hass.async_add_executor_job(_get_attribute, client, SOFTWARE_PACKAGE)
 
 
 async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str:
     """Gets the equipment identifier."""
-    response = await hass.async_add_executor_job(client.get, EQUIPMENT_ID)
-    data = await hass.async_add_executor_job(AXDR_DECODER.decode, response)
-    return data[ATTR_DATA]
+    return await hass.async_add_executor_job(_get_attribute, client, EQUIPMENT_ID)
 
 
 def _connect_and_associate(client: DlmsClient):
     """Connects and associates the client."""
     client.connect()
     client.associate()
+
+
+def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> str:
+    """Gets COSEM attribute."""
+    response = client.get(attribute)
+    data = AXDR_DECODER.decode(response)
+    return data[ATTR_DATA]
 
 
 class DlmsConnection:
@@ -188,8 +192,7 @@ class DlmsConnection:
         """Get the attribute."""
         if not self.disconnected.is_set():
             try:
-                response = self.client.get(attribute)
-                return AXDR_DECODER.decode(response)[ATTR_DATA]
+                return _get_attribute(self.client, attribute)
             except Exception:  # pylint: disable=broad-except
                 self.disconnected.set()
 
