@@ -63,6 +63,8 @@ EQUIPMENT_ID = cosem.CosemAttribute(
     attribute=2,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 # Setup structlog for the dlms-cosem package.
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING)
@@ -102,7 +104,7 @@ async def async_decode_flag_id(flag_id: str) -> str:
 async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
     """Decodes logical device name."""
     flag_id = logical_device_name[0:3]
-    model: str = "Smart meter"
+    model = "Smart meter"
 
     try:
         manufacturer = await async_decode_flag_id(flag_id)
@@ -139,7 +141,7 @@ def _connect_and_associate(client: DlmsClient):
     client.associate()
 
 
-def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> str:
+def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute):
     """Gets COSEM attribute."""
     response = client.get(attribute)
     data = AXDR_DECODER.decode(response)
@@ -173,19 +175,27 @@ class DlmsConnection:
         self._reconnect_task = asyncio.create_task(self._reconnect_on_failure())
 
     async def async_connect(self) -> None:
-        """Asyncronously connect to DLMS server."""
+        """Asyncronously connect to the DLMS server."""
         await self._hass.async_add_executor_job(_connect_and_associate, self.client)
 
     async def _reconnect_on_failure(self) -> None:
         """Task to initiate reconnect on the connection failure."""
         while True:
             await self.disconnected.wait()
+            _LOGGER.warning("Connection lost, reconnecting...")
             try:
                 self.client = async_get_dlms_client(self.entry.data)
                 await self.async_connect()
                 self.disconnected.clear()
                 async_dispatcher_send(self._hass, SIGNAL_RECONNECTED)
             except CommunicationError:
+                _LOGGER.warning(
+                    "Reconnect attempt failed, retrying in %d seconds...",
+                    RECONNECT_INTERVAL.total_seconds(),
+                )
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+            finally:
                 await asyncio.sleep(RECONNECT_INTERVAL.total_seconds())
 
     def get(self, attribute: cosem.CosemAttribute):
