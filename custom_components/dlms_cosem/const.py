@@ -18,6 +18,7 @@ CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 DEFAULT_PORT: Final = 23
 DEFAULT_PASSWORD: Final = "111111"
 DEFAULT_MODEL: Final = "smart meter"
+DEFAULT_ATTRIBUTE: Final = 2
 
 # Dispatcher signals
 SIGNAL_RECONNECTED: Final = "reconnected"

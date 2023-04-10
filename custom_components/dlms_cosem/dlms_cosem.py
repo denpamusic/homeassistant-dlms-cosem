@@ -28,6 +28,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
+    DEFAULT_ATTRIBUTE,
     DEFAULT_MODEL,
     DOMAIN,
     SIGNAL_RECONNECTED,
@@ -49,19 +50,19 @@ AXDR_DECODER = a_xdr.AXdrDecoder(
 LOGICAL_DEVICE_NAME = cosem.CosemAttribute(
     interface=enumerations.CosemInterface.DATA,
     instance=cosem.Obis(0, 0, 42, 0, 0),
-    attribute=2,
+    attribute=DEFAULT_ATTRIBUTE,
 )
 
 SOFTWARE_PACKAGE = cosem.CosemAttribute(
     interface=enumerations.CosemInterface.DATA,
     instance=cosem.Obis(0, 0, 96, 1, 2),
-    attribute=2,
+    attribute=DEFAULT_ATTRIBUTE,
 )
 
 EQUIPMENT_ID = cosem.CosemAttribute(
     interface=enumerations.CosemInterface.DATA,
     instance=cosem.Obis(0, 0, 96, 1, 0),
-    attribute=2,
+    attribute=DEFAULT_ATTRIBUTE,
 )
 
 _LOGGER = logging.getLogger(__name__)

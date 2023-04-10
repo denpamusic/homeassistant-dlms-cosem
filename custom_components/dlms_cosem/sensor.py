@@ -26,7 +26,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import Throttle
 
-from .const import DOMAIN, SIGNAL_RECONNECTED
+from .const import DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_RECONNECTED
 from .dlms_cosem import DlmsConnection
 
 SCAN_INTERVAL = timedelta(seconds=15)
@@ -46,7 +46,7 @@ class CosemEntityAdditionalKeys:
 class CosemSensorEntityDescription(SensorEntityDescription, CosemEntityAdditionalKeys):
     """Describes the COSEM sensor entity."""
 
-    attribute: int = 2
+    attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface = enumerations.CosemInterface.REGISTER
 
 
