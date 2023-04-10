@@ -14,9 +14,10 @@ CONF_PORT: Final = "port"
 CONF_PASSWORD: Final = "password"
 CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 
-# Configuration defaults
+# Dfaults
 DEFAULT_PORT: Final = 23
 DEFAULT_PASSWORD: Final = "111111"
+DEFAULT_MODEL: Final = "smart meter"
 
-# Dispatcher signals.
+# Dispatcher signals
 SIGNAL_RECONNECTED: Final = "reconnected"

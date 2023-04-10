@@ -28,6 +28,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
+    DEFAULT_MODEL,
     DOMAIN,
     SIGNAL_RECONNECTED,
 )
@@ -104,7 +105,7 @@ async def async_decode_flag_id(flag_id: str) -> str:
 async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
     """Decodes logical device name."""
     flag_id = logical_device_name[0:3]
-    model = "Smart meter"
+    model = DEFAULT_MODEL
 
     try:
         manufacturer = await async_decode_flag_id(flag_id)
