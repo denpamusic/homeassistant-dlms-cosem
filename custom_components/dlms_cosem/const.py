@@ -14,7 +14,7 @@ CONF_PORT: Final = "port"
 CONF_PASSWORD: Final = "password"
 CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 
-# Dfaults
+# Defaults
 DEFAULT_PORT: Final = 23
 DEFAULT_PASSWORD: Final = "111111"
 DEFAULT_MODEL: Final = "smart meter"
