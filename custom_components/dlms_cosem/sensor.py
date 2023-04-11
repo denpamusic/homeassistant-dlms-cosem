@@ -243,6 +243,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
 class CosemSensor(SensorEntity):
     """Represents the COSEM sensor platform."""
 
+    _attr_cosem_attribute: cosem.CosemAttribute
     _connection: DlmsConnection
     entity_description: CosemSensorEntityDescription
 
@@ -254,17 +255,16 @@ class CosemSensor(SensorEntity):
         self.entity_description = description
         self._attr_device_info = connection.device_info
         self._attr_unique_id = f"{connection.entry.unique_id}-{description.key}"
+        self._attr_cosem_attribute = cosem.CosemAttribute(
+            interface=self.entity_description.interface,
+            instance=self.entity_description.obis,
+            attribute=self.entity_description.attribute,
+        )
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self) -> None:
         """Update entity state."""
-        response = self._connection.get(
-            cosem.CosemAttribute(
-                interface=self.entity_description.interface,
-                instance=self.entity_description.obis,
-                attribute=self.entity_description.attribute,
-            )
-        )
+        response = self._connection.get(self.cosem_attribute)
         self._attr_native_value = (
             response if response is None else self.entity_description.value_fn(response)
         )
@@ -287,6 +287,11 @@ class CosemSensor(SensorEntity):
     def available(self) -> bool:
         """If entity is available."""
         return not self._connection.disconnected.is_set()
+
+    @property
+    def cosem_attribute(self) -> cosem.CosemAttribute:
+        """Returns COSEM attribute instance."""
+        return self._attr_cosem_attribute
 
 
 async def async_setup_entry(
