@@ -8,18 +8,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import CONF_HOST, DOMAIN
-from .dlms_cosem import DlmsConnection, async_get_dlms_client
+from .dlms_cosem import DlmsConnection
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up DLMS connection from a config entry."""
-    connection = DlmsConnection(
-        hass,
-        entry,
-        async_get_dlms_client(entry.data),
-    )
+    connection = DlmsConnection(hass, entry)
 
     async def async_close_connection(event=None):
         """Closes DLMS connection on HA Stop."""
