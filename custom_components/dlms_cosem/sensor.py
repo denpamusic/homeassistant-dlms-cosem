@@ -34,18 +34,12 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 PARALLEL_UPDATES = 1
 
 
-@dataclass
-class CosemEntityAdditionalKeys:
-    """Additional keys for the COSEM entity description."""
+@dataclass(kw_only=True, slots=True)
+class CosemSensorEntityDescription(SensorEntityDescription):
+    """Describes the COSEM sensor entity."""
 
     obis: cosem.Obis
     value_fn: Callable
-
-
-@dataclass
-class CosemSensorEntityDescription(SensorEntityDescription, CosemEntityAdditionalKeys):
-    """Describes the COSEM sensor entity."""
-
     attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface = enumerations.CosemInterface.REGISTER
 
