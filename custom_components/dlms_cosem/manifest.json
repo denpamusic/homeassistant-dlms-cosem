@@ -16,7 +16,7 @@
     "dlms_cosem"
   ],
   "requirements": [
-    "dlms-cosem==23.1.0a2",
+    "dlms-cosem==23.1.0a3",
     "aiofiles==23.1.0",
     "ijson==3.2.0.post0"
   ],
