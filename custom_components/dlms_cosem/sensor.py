@@ -256,9 +256,9 @@ class CosemSensor(SensorEntity):
         )
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    def update(self) -> None:
+    async def async_update(self) -> None:
         """Update entity state."""
-        response = self._connection.get(self.cosem_attribute)
+        response = await self._connection.async_get(self.cosem_attribute)
         self._attr_native_value = (
             response if response is None else self.entity_description.value_fn(response)
         )

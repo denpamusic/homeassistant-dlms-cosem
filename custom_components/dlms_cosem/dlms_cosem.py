@@ -206,6 +206,10 @@ class DlmsConnection:
 
         return None
 
+    async def async_get(self, attribute: cosem.CosemAttribute):
+        """Asyncronously get the attribute."""
+        return await self._hass.async_add_executor_job(self.get, attribute)
+
     def close(self) -> None:
         """Closes the connection."""
         if self._reconnect_task:
