@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import datetime as dt
 from datetime import timedelta
 
-from dlms_cosem import cosem, enumerations
+from dlms_cosem import cosem, enumerations, time
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -32,6 +33,16 @@ from .dlms_cosem import DlmsConnection
 SCAN_INTERVAL = timedelta(seconds=15)
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 PARALLEL_UPDATES = 1
+
+
+def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
+    """Converts timezone between DLMS and HA."""
+    utcoffset = dattim.utcoffset()
+    if utcoffset is None:
+        return dattim
+
+    local_tz = dt.timezone(offset=dt.timedelta(seconds=-utcoffset.total_seconds()))
+    return dattim.replace(tzinfo=local_tz)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -230,6 +241,14 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
+    ),
+    CosemSensorEntityDescription(
+        key="local_time",
+        name="Local Time",
+        obis=cosem.Obis(0, 0, 1, 0, 0),
+        interface=enumerations.CosemInterface.CLOCK,
+        value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
+        device_class=SensorDeviceClass.TIMESTAMP,
     ),
 )
 
