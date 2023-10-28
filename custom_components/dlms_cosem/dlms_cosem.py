@@ -124,7 +124,7 @@ async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient)
     data = await hass.async_add_executor_job(
         _get_attribute, client, LOGICAL_DEVICE_NAME
     )
-    return data.decode("utf-8")
+    return data.decode(encoding="utf-8")
 
 
 async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
@@ -178,8 +178,8 @@ class DlmsConnection:
     async def _reconnect_on_failure(self) -> None:
         """Task to initiate reconnect on the connection failure."""
         reconnect_interval = RECONNECT_INTERVAL.total_seconds()
-        while True:
-            await self.disconnected.wait()
+        while await self.disconnected.wait():
+            await self._async_ensure_disconnect_io()
             _LOGGER.warning("Connection lost, reconnecting...")
             try:
                 self.client = async_get_dlms_client(self.entry.data)
@@ -195,6 +195,18 @@ class DlmsConnection:
                 _LOGGER.exception("Unexpected exception")
             finally:
                 await asyncio.sleep(reconnect_interval)
+
+    async def _async_ensure_disconnect_io(self) -> None:
+        """Asyncronously ensures that IO is disconnected"""
+        await self._hass.async_add_executor_job(self._ensure_disconnect_io)
+
+    def _ensure_disconnect_io(self) -> None:
+        """Ensures that IO is disconnected."""
+        try:
+            self.client.transport.io.disconnect()
+        except Exception:  # pylint: disable=broad-except
+            # Ignore errors on disconnect.
+            pass
 
     def get(self, attribute: cosem.CosemAttribute):
         """Get the attribute."""
