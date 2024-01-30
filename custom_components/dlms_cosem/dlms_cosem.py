@@ -5,6 +5,7 @@ import asyncio
 from collections.abc import MutableMapping
 from contextlib import suppress
 from datetime import timedelta
+from functools import cache
 import logging
 from pathlib import Path
 from typing import Any, Final
@@ -92,6 +93,7 @@ def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
     )
 
 
+@cache
 async def async_decode_flag_id(flag_id: str) -> str:
     """Decode flag id."""
     dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
@@ -206,7 +208,7 @@ class DlmsConnection:
         """Ensure that IO is disconnected."""
 
         with suppress(Exception):
-            # Ignore errors on disconnect.
+            # Ignore all errors on IO disconnect.
             self.client.transport.io.disconnect()
 
     def get(self, attribute: cosem.CosemAttribute):
@@ -229,13 +231,11 @@ class DlmsConnection:
             # Cancel reconnect task.
             self._reconnect_task.cancel()
 
-        try:
+        with suppress(Exception):
+            # Ignore all errors on disconnect.
             self.client.disconnect()
-            self._ensure_disconnect_io()
-        except Exception:  # pylint: disable=broad-except
-            # Ignore errors on disconnect.
-            pass
 
+        self._ensure_disconnect_io()
         self.disconnected.set()
 
     async def async_close(self):
