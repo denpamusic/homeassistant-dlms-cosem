@@ -28,6 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         await connection.async_setup()
     except CommunicationError as e:
+        await connection.async_close()
         raise ConfigEntryNotReady(
             f"Timed out while connecting to {connection.entry.data[CONF_HOST]}"
         ) from e
