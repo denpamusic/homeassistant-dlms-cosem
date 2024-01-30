@@ -1,25 +1,89 @@
 {
-    "config": {
-        "error": {
-            "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-            "unknown": "[%key:common::config_flow::error::unknown%]"
-        },
-        "abort": {
-            "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-            "indentify_failed": "Device identification failed, try again"
-        },
-        "progress": {
-            "identify_device": "Identifying device..."
-        },
-        "step": {
-            "user": {
-                "data": {
-                    "host": "[%key:common::config_flow::data::host%]",
-                    "port": "[%key:common::config_flow::data::port%]",
-                    "physical_address": "Physical address",
-                    "password": "[%key:common::config_flow::data::password%]"
-                }
-            }
+  "config": {
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "indentify_failed": "Device identification failed, try again"
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "progress": {
+      "identify_device": "Identifying device..."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "physical_address": "Physical address",
+          "port": "[%key:common::config_flow::data::port%]"
         }
+      }
     }
+  },
+  "entity": {
+    "sensor": {
+      "active_energy_tariff1": {
+        "name": "Active energy tariff 1"
+      },
+      "active_energy_tariff2": {
+        "name": "Active energy tariff 2"
+      },
+      "active_energy_total": {
+        "name": "Active energy total"
+      },
+      "active_power_l1": {
+        "name": "Active power L1"
+      },
+      "active_power_l2": {
+        "name": "Active power L2"
+      },
+      "active_power_l3": {
+        "name": "Active power L3"
+      },
+      "active_power_total": {
+        "name": "Active power total"
+      },
+      "current_l1": {
+        "name": "Current L1"
+      },
+      "current_l2": {
+        "name": "Current L2"
+      },
+      "current_l3": {
+        "name": "Current L3"
+      },
+      "frequency": {
+        "name": "Frequency"
+      },
+      "internal_temperature": {
+        "name": "Internal temperature"
+      },
+      "local_time": {
+        "name": "Local time"
+      },
+      "power_factor_l1": {
+        "name": "Power factor L1"
+      },
+      "power_factor_l2": {
+        "name": "Power factor L2"
+      },
+      "power_factor_l3": {
+        "name": "Power factor L3"
+      },
+      "power_factor_total": {
+        "name": "Power factor total"
+      },
+      "voltage_l1": {
+        "name": "Voltage L1"
+      },
+      "voltage_l2": {
+        "name": "Voltage L2"
+      },
+      "voltage_l3": {
+        "name": "Voltage L3"
+      }
+    }
+  }
 }

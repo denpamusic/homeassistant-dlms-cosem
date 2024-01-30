@@ -45,7 +45,7 @@ def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
     return dattim.replace(tzinfo=local_tz)
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class CosemSensorEntityDescription(SensorEntityDescription):
     """Describes the COSEM sensor entity."""
 
@@ -58,7 +58,7 @@ class CosemSensorEntityDescription(SensorEntityDescription):
 SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     CosemSensorEntityDescription(
         key="current_l1",
-        name="Current L1",
+        translation_key="current_l1",
         obis=cosem.Obis(1, 0, 31, 7, 0),
         value_fn=lambda x: x / 1000,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
@@ -68,7 +68,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="current_l2",
-        name="Current L2",
+        translation_key="current_l2",
         obis=cosem.Obis(1, 0, 51, 7, 0),
         value_fn=lambda x: x / 1000,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
@@ -78,7 +78,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="current_l3",
-        name="Current L3",
+        translation_key="current_l3",
         obis=cosem.Obis(1, 0, 71, 7, 0),
         value_fn=lambda x: x / 1000,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
@@ -88,7 +88,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="voltage_l1",
-        name="Voltage L1",
+        translation_key="voltage_l1",
         obis=cosem.Obis(1, 0, 32, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
@@ -98,7 +98,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="voltage_l2",
-        name="Voltage L2",
+        translation_key="voltage_l2",
         obis=cosem.Obis(1, 0, 52, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
@@ -108,7 +108,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="voltage_l3",
-        name="Voltage L3",
+        translation_key="voltage_l3",
         obis=cosem.Obis(1, 0, 72, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
@@ -118,7 +118,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="active_power_total",
-        name="Active power total",
+        translation_key="active_power_total",
         obis=cosem.Obis(1, 0, 1, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -128,7 +128,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="active_power_l1",
-        name="Active power L1",
+        translation_key="active_power_l1",
         obis=cosem.Obis(1, 0, 21, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -138,7 +138,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="active_power_l2",
-        name="Active power L2",
+        translation_key="active_power_l2",
         obis=cosem.Obis(1, 0, 41, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -148,7 +148,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="active_power_l3",
-        name="Active power L3",
+        translation_key="active_power_l3",
         obis=cosem.Obis(1, 0, 61, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -158,7 +158,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="power_factor_total",
-        name="Power factor total",
+        translation_key="power_factor_total",
         obis=cosem.Obis(1, 0, 13, 7, 0),
         value_fn=lambda x: x / 1000,
         device_class=SensorDeviceClass.POWER_FACTOR,
@@ -167,7 +167,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="power_factor_l1",
-        name="Power factor L1",
+        translation_key="power_factor_l1",
         obis=cosem.Obis(1, 0, 33, 7, 0),
         value_fn=lambda x: x / 1000,
         device_class=SensorDeviceClass.POWER_FACTOR,
@@ -176,7 +176,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="power_factor_l2",
-        name="Power factor L2",
+        translation_key="power_factor_l2",
         obis=cosem.Obis(1, 0, 53, 7, 0),
         value_fn=lambda x: x / 1000,
         device_class=SensorDeviceClass.POWER_FACTOR,
@@ -185,7 +185,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="power_factor_l3",
-        name="Power factor L3",
+        translation_key="power_factor_l3",
         obis=cosem.Obis(1, 0, 73, 7, 0),
         value_fn=lambda x: x / 1000,
         device_class=SensorDeviceClass.POWER_FACTOR,
@@ -194,7 +194,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="active_energy_total",
-        name="Active energy total",
+        translation_key="active_energy_total",
         obis=cosem.Obis(1, 0, 1, 8, 0),
         value_fn=lambda x: x / 1000,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -204,7 +204,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="active_energy_tariff1",
-        name="Active energy tariff 1",
+        translation_key="active_energy_tariff1",
         obis=cosem.Obis(1, 0, 1, 8, 1),
         value_fn=lambda x: x / 1000,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -214,7 +214,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="active_energy_tariff2",
-        name="Active energy tariff 2",
+        translation_key="active_energy_tariff2",
         obis=cosem.Obis(1, 0, 1, 8, 2),
         value_fn=lambda x: x / 1000,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -224,7 +224,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="frequency",
-        name="Frequency",
+        translation_key="frequency",
         obis=cosem.Obis(1, 0, 14, 7, 0),
         value_fn=lambda x: x / 100,
         native_unit_of_measurement=UnitOfFrequency.HERTZ,
@@ -234,7 +234,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="internal_temperature",
-        name="Internal temperature",
+        translation_key="internal_temperature",
         obis=cosem.Obis(0, 0, 96, 9, 0),
         value_fn=lambda x: x,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -244,7 +244,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
     ),
     CosemSensorEntityDescription(
         key="local_time",
-        name="Local Time",
+        translation_key="local_time",
         obis=cosem.Obis(0, 0, 1, 0, 0),
         interface=enumerations.CosemInterface.CLOCK,
         value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),

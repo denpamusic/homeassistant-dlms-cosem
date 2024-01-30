@@ -1,25 +1,89 @@
 {
-    "config": {
-        "error": {
-            "cannot_connect": "Ошибка подключения",
-            "unknown": "Неопознанная ошибка"
-        },
-        "abort": {
-            "already_configured": "Устройство уже настроено",
-            "indentify_failed": "Ошибка определения устройства, попробуйте позже"
-        },
-        "progress": {
-            "identify_device": "Определяем устройство..."
-        },
-        "step": {
-            "user": {
-                "data": {
-                    "host": "Хост",
-                    "port": "Порт",
-                    "physical_address": "Физический адрес",
-                    "password": "Пароль"
-                }
-            }
+  "config": {
+    "abort": {
+      "already_configured": "Устройство уже настроено",
+      "indentify_failed": "Ошибка определения устройства, попробуйте позже"
+    },
+    "error": {
+      "cannot_connect": "Ошибка подключения",
+      "unknown": "Неопознанная ошибка"
+    },
+    "progress": {
+      "identify_device": "Определяем устройство..."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "host": "Хост",
+          "password": "Пароль",
+          "physical_address": "Физический адрес",
+          "port": "Порт"
         }
+      }
     }
+  },
+  "entity": {
+    "sensor": {
+      "active_energy_tariff1": {
+        "name": "Электроэнергия (тариф 1)"
+      },
+      "active_energy_tariff2": {
+        "name": "Электроэнергия (тариф 2)"
+      },
+      "active_energy_total": {
+        "name": "Электроэнергия (полная)"
+      },
+      "active_power_l1": {
+        "name": "Активная мощность L1"
+      },
+      "active_power_l2": {
+        "name": "Активная мощность L2"
+      },
+      "active_power_l3": {
+        "name": "Активная мощность L3"
+      },
+      "active_power_total": {
+        "name": "Активная мощность (полная)"
+      },
+      "current_l1": {
+        "name": "Сила тока L1"
+      },
+      "current_l2": {
+        "name": "Сила тока L2"
+      },
+      "current_l3": {
+        "name": "Сила тока L3"
+      },
+      "frequency": {
+        "name": "Частота"
+      },
+      "internal_temperature": {
+        "name": "Температура в корпусе"
+      },
+      "local_time": {
+        "name": "Локальное время"
+      },
+      "power_factor_l1": {
+        "name": "Коэффициент мощности L1"
+      },
+      "power_factor_l2": {
+        "name": "Коэффициент мощности L2"
+      },
+      "power_factor_l3": {
+        "name": "Коэффициент мощности L3"
+      },
+      "power_factor_total": {
+        "name": "Коэффициент мощности (полный)"
+      },
+      "voltage_l1": {
+        "name": "Напряжение L1"
+      },
+      "voltage_l2": {
+        "name": "Напряжение L2"
+      },
+      "voltage_l3": {
+        "name": "Напряжение L3"
+      }
+    }
+  }
 }
