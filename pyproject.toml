@@ -5,7 +5,7 @@ name = "homeassistant-dlms-cosem"
 authors = [
     {name = "Denis Paavilainen", email = "denpa@denpa.pro"}
 ]
-description = "DLMS/COSEM electricity meter integration for Home Assistant."
+description = "DLMS/COSEM smart energy meter integration for Home Assistant."
 
 [tool.codespell]
 skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.tox,.vscode,build,*/translations/*.json,dlms_flagids.json"
