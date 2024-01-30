@@ -7,6 +7,7 @@ DOMAIN: Final = "dlms_cosem"
 
 # Attributes
 ATTR_DATA: Final = "data"
+ATTR_EQUIPMENT_ID: Final = "equipment_id"
 
 # Configuration
 CONF_HOST: Final = "host"

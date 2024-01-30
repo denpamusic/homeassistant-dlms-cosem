@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import MutableMapping
 import logging
+from operator import itemgetter
 from typing import Any
 
 from dlms_cosem.client import DlmsClient
@@ -17,6 +18,7 @@ import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
 from .const import (
+    ATTR_EQUIPMENT_ID,
     CONF_HOST,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
@@ -60,23 +62,19 @@ async def validate_input(
     return client
 
 
+_get_device_info = itemgetter(ATTR_MANUFACTURER, ATTR_MODEL, ATTR_EQUIPMENT_ID)
+
+
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for DLMS integration."""
 
     VERSION = 1
 
-    def __init__(self) -> None:
-        """Initialize a new config flow."""
-        self.client: DlmsClient | None = None
-        self.equipment_id: str | None = None
-        self.identify_task: asyncio.Task | None = None
-        self.init_info: MutableMapping[str, Any] = {}
-        self.logical_device_name: str | None = None
-        self.manufacturer: str | None = None
-        self.model: str | None = None
+    client: DlmsClient
+    init_info: dict[str, Any]
 
     async def async_step_user(
-        self, user_input: MutableMapping[str, Any] | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
         if user_input is None:
@@ -103,17 +101,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
     async def async_step_identify(self, _=None) -> FlowResult:
         """Handle the identify step."""
 
-        async def _identify_device():
+        async def _identify_device() -> None:
+            """Identify device."""
             try:
-                self.manufacturer, self.model = await async_decode_logical_device_name(
+                manufacturer, model = await async_decode_logical_device_name(
                     await async_get_logical_device_name(self.hass, self.client)
                 )
-                self.equipment_id = await async_get_equipment_id(self.hass, self.client)
+                equipment_id = await async_get_equipment_id(self.hass, self.client)
                 sw_version = await async_get_sw_version(self.hass, self.client)
                 self.init_info.update(
                     {
-                        ATTR_MANUFACTURER: self.manufacturer,
-                        ATTR_MODEL: self.model,
+                        ATTR_EQUIPMENT_ID: equipment_id,
+                        ATTR_MANUFACTURER: manufacturer,
+                        ATTR_MODEL: model,
                         ATTR_SW_VERSION: sw_version,
                     }
                 )
@@ -139,27 +139,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
         return self.async_show_progress_done(next_step_id="finish")
 
-    async def async_step_finish(self, user_input=None) -> FlowResult:
+    async def async_step_finish(self, _=None) -> FlowResult:
         """Finish the integration config."""
-        if self.client:
-            await self.hass.async_add_executor_job(self.client.disconnect)
+        await self.hass.async_add_executor_job(self.client.disconnect)
 
-        if self.equipment_id:
-            await self._async_set_unique_id(self.equipment_id)
+        manufacturer, model, equipment_id = _get_device_info(self.init_info)
+        await self.async_set_unique_id(equipment_id)
+        self._abort_if_unique_id_configured()
 
         return self.async_create_entry(
-            title=f"{self.manufacturer} {self.model} ({self.equipment_id})",
+            title=f"{manufacturer} {model} ({equipment_id})",
             data=self.init_info,
         )
 
-    async def async_step_identify_failed(self, user_input=None) -> FlowResult:
+    async def async_step_identify_failed(self, _=None) -> FlowResult:
         """Handle issues that need transition await from progress step."""
         return self.async_abort(reason="identify_failed")
-
-    async def _async_set_unique_id(self, equipment_id: str) -> None:
-        """Set the config entry's unique ID."""
-        await self.async_set_unique_id(equipment_id)
-        self._abort_if_unique_id_configured()
 
 
 class CannotConnect(HomeAssistantError):
