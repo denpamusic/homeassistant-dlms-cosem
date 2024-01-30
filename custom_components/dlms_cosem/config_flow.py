@@ -49,6 +49,7 @@ async def validate_input(
     hass: HomeAssistant, data: MutableMapping[str, Any]
 ) -> DlmsClient:
     """Validate the user input allows us to connect.
+
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
     try:
@@ -59,12 +60,13 @@ async def validate_input(
     return client
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for DLMS integration."""
 
     VERSION = 1
 
     def __init__(self) -> None:
+        """Initialize a new config flow."""
         self.client: DlmsClient | None = None
         self.equipment_id: str | None = None
         self.identify_task: asyncio.Task | None = None
@@ -98,7 +100,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
 
-    async def async_step_identify(self, user_input=None) -> FlowResult:
+    async def async_step_identify(self, _=None) -> FlowResult:
         """Handle the identify step."""
 
         async def _identify_device():
@@ -155,8 +157,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_abort(reason="identify_failed")
 
     async def _async_set_unique_id(self, equipment_id: str) -> None:
-        """Set the config entry's unique ID (based on equipment
-        identifier)."""
+        """Set the config entry's unique ID."""
         await self.async_set_unique_id(equipment_id)
         self._abort_if_unique_id_configured()
 

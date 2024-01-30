@@ -6,7 +6,7 @@
         },
         "abort": {
             "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-            "indentify_failed": "Device identfication failed, try again"
+            "indentify_failed": "Device identification failed, try again"
         },
         "progress": {
             "identify_device": "Identifying device..."

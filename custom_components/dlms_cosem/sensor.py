@@ -36,7 +36,7 @@ PARALLEL_UPDATES = 1
 
 
 def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
-    """Converts timezone between DLMS and HA."""
+    """Convert timezone between DLMS and HA."""
     utcoffset = dattim.utcoffset()
     if utcoffset is None:
         return dattim

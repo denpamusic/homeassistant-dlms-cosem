@@ -18,7 +18,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     connection = DlmsConnection(hass, entry)
 
     async def async_close_connection(event=None):
-        """Closes DLMS connection on HA Stop."""
+        """Close DLMS connection on HA Stop."""
         await connection.async_close()
 
     entry.async_on_unload(

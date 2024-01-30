@@ -6,7 +6,7 @@
         },
         "abort": {
             "already_configured": "Device is already configured",
-            "indentify_failed": "Device identfication failed, try again"
+            "indentify_failed": "Device identification failed, try again"
         },
         "progress": {
             "identify_device": "Identifying device..."

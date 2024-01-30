@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import MutableMapping
+from contextlib import suppress
 from datetime import timedelta
 import logging
 from pathlib import Path
@@ -74,7 +75,7 @@ structlog.configure(
 
 
 def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
-    """Gets the DLMS client."""
+    """Get DLMS client."""
     tcp_io = BlockingTcpIO(host=data[CONF_HOST], port=data[CONF_PORT], timeout=10)
     hdlc_transport = HdlcTransport(
         client_logical_address=LOGICAL_CLIENT_ADDRESS,
@@ -92,7 +93,7 @@ def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
 
 
 async def async_decode_flag_id(flag_id: str) -> str:
-    """Decodes flag id."""
+    """Decode flag id."""
     dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
 
     async with aiofiles.open(dlms_flag_ids_file, encoding="utf-8") as f:
@@ -104,7 +105,7 @@ async def async_decode_flag_id(flag_id: str) -> str:
 
 
 async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
-    """Decodes logical device name."""
+    """Decode logical device name."""
     flag_id = logical_device_name[0:3]
     model = DEFAULT_MODEL
 
@@ -120,7 +121,7 @@ async def async_decode_logical_device_name(logical_device_name: str) -> tuple[st
 
 
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
-    """Gets the logical device name."""
+    """Get the logical device name."""
     data = await hass.async_add_executor_job(
         _get_attribute, client, LOGICAL_DEVICE_NAME
     )
@@ -128,23 +129,23 @@ async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient)
 
 
 async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
-    """Gets the software version."""
+    """Get the software version."""
     return await hass.async_add_executor_job(_get_attribute, client, SOFTWARE_PACKAGE)
 
 
 async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str:
-    """Gets the equipment identifier."""
+    """Get the equipment identifier."""
     return await hass.async_add_executor_job(_get_attribute, client, EQUIPMENT_ID)
 
 
 def _connect_and_associate(client: DlmsClient):
-    """Connects and associates the client."""
+    """Connect and associate the client."""
     client.connect()
     client.associate()
 
 
 def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute):
-    """Gets COSEM attribute."""
+    """Get COSEM attribute."""
     response = client.get(attribute)
     data = AXDR_DECODER.decode(response)
     return data[ATTR_DATA]
@@ -160,6 +161,7 @@ class DlmsConnection:
     _hass: HomeAssistant
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
+        """Initialize a new DLMS/COSEM connection."""
         self.client = async_get_dlms_client(entry.data)
         self.disconnected = asyncio.Event()
         self.entry = entry
@@ -167,12 +169,12 @@ class DlmsConnection:
         self._hass = hass
 
     async def async_setup(self) -> None:
-        """Setup the DLMS connection."""
+        """Set up DLMS connection."""
         await self.async_connect()
         self._reconnect_task = asyncio.create_task(self._reconnect_on_failure())
 
     async def async_connect(self) -> None:
-        """Asyncronously connect to the DLMS server."""
+        """Asynchronously connect to the DLMS server."""
         await self._hass.async_add_executor_job(_connect_and_associate, self.client)
 
     async def _reconnect_on_failure(self) -> None:
@@ -197,16 +199,15 @@ class DlmsConnection:
                 await asyncio.sleep(reconnect_interval)
 
     async def _async_ensure_disconnect_io(self) -> None:
-        """Asyncronously ensures that IO is disconnected"""
+        """Asynchronously ensure that IO is disconnected."""
         await self._hass.async_add_executor_job(self._ensure_disconnect_io)
 
     def _ensure_disconnect_io(self) -> None:
-        """Ensures that IO is disconnected."""
-        try:
-            self.client.transport.io.disconnect()
-        except Exception:  # pylint: disable=broad-except
+        """Ensure that IO is disconnected."""
+
+        with suppress(Exception):
             # Ignore errors on disconnect.
-            pass
+            self.client.transport.io.disconnect()
 
     def get(self, attribute: cosem.CosemAttribute):
         """Get the attribute."""
@@ -219,17 +220,18 @@ class DlmsConnection:
         return None
 
     async def async_get(self, attribute: cosem.CosemAttribute):
-        """Asyncronously get the attribute."""
+        """Asynchronously get the attribute."""
         return await self._hass.async_add_executor_job(self.get, attribute)
 
     def close(self) -> None:
-        """Closes the connection."""
+        """Close connection."""
         if self._reconnect_task:
             # Cancel reconnect task.
             self._reconnect_task.cancel()
 
         try:
             self.client.disconnect()
+            self._ensure_disconnect_io()
         except Exception:  # pylint: disable=broad-except
             # Ignore errors on disconnect.
             pass
@@ -237,7 +239,7 @@ class DlmsConnection:
         self.disconnected.set()
 
     async def async_close(self):
-        """Asyncronously closes the connection."""
+        """Asynchronously closes the connection."""
         await self._hass.async_add_executor_job(self.close)
 
     @property
@@ -253,24 +255,24 @@ class DlmsConnection:
 
     @property
     def manufacturer(self) -> str:
-        """Gets the manufacturer."""
+        """Return the manufacturer."""
         return self.entry.data[ATTR_MANUFACTURER]
 
     @property
     def model(self) -> str:
-        """Gets the model."""
+        """Return the model."""
         return self.entry.data[ATTR_MODEL]
 
     @property
     def sw_version(self) -> str:
-        """Gets the software version."""
+        """Return the software version."""
         return self.entry.data[ATTR_SW_VERSION]
 
     @classmethod
     async def async_check(
         cls, hass: HomeAssistant, data: MutableMapping[str, Any]
     ) -> DlmsClient:
-        """Checks connection to the DLMS meter."""
+        """Check DLMS meter connection."""
         client = async_get_dlms_client(data)
         await hass.async_add_executor_job(_connect_and_associate, client)
         return client
