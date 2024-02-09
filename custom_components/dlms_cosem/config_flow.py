@@ -133,7 +133,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
         try:
             await asyncio.wait_for(self.identify_task, timeout=10)
-        except (asyncio.TimeoutError, CommunicationError):
+        except (TimeoutError, CommunicationError):
             return self.async_show_progress_done(next_step_id="identify_failed")
         finally:
             self.identify_task = None
