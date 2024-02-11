@@ -5,7 +5,7 @@ import asyncio
 from collections.abc import MutableMapping
 from contextlib import suppress
 from datetime import timedelta
-from functools import cache
+from functools import cache, cached_property
 import logging
 from pathlib import Path
 from typing import Any, Final
@@ -242,7 +242,7 @@ class DlmsConnection:
         """Asynchronously closes the connection."""
         await self._hass.async_add_executor_job(self.close)
 
-    @property
+    @cached_property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
         return DeviceInfo(
@@ -253,17 +253,17 @@ class DlmsConnection:
             sw_version=self.sw_version,
         )
 
-    @property
+    @cached_property
     def manufacturer(self) -> str:
         """Return the manufacturer."""
         return self.entry.data[ATTR_MANUFACTURER]
 
-    @property
+    @cached_property
     def model(self) -> str:
         """Return the model."""
         return self.entry.data[ATTR_MODEL]
 
-    @property
+    @cached_property
     def sw_version(self) -> str:
         """Return the software version."""
         return self.entry.data[ATTR_SW_VERSION]
