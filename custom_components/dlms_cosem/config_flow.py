@@ -106,7 +106,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
     ) -> FlowResult:
         """Handle the identify step."""
 
-        if self.identify_task is not None:
+        if self.identify_task is None:
             self.identify_task = self.hass.async_create_task(
                 self._async_identify_device()
             )
