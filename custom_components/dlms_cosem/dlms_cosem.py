@@ -8,7 +8,7 @@ from datetime import timedelta
 from functools import cache, cached_property
 import logging
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, cast
 
 import aiofiles
 from dlms_cosem import a_xdr, cosem, enumerations
@@ -95,13 +95,13 @@ def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
 
 @cache
 async def async_decode_flag_id(flag_id: str) -> str:
-    """Decode flag id."""
+    """Decode the flag id."""
     dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
 
     async with aiofiles.open(dlms_flag_ids_file, encoding="utf-8") as f:
         async for key, value in ijson.kvitems_async(f, ""):
             if key == flag_id:
-                return value
+                return cast(str, value)
 
     raise KeyError
 
@@ -124,29 +124,34 @@ async def async_decode_logical_device_name(logical_device_name: str) -> tuple[st
 
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the logical device name."""
-    data = await hass.async_add_executor_job(
-        _get_attribute, client, LOGICAL_DEVICE_NAME
+    data = cast(
+        bytes,
+        await hass.async_add_executor_job(_get_attribute, client, LOGICAL_DEVICE_NAME),
     )
     return data.decode(encoding="utf-8")
 
 
 async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the software version."""
-    return await hass.async_add_executor_job(_get_attribute, client, SOFTWARE_PACKAGE)
+    return cast(
+        str, await hass.async_add_executor_job(_get_attribute, client, SOFTWARE_PACKAGE)
+    )
 
 
 async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the equipment identifier."""
-    return await hass.async_add_executor_job(_get_attribute, client, EQUIPMENT_ID)
+    return cast(
+        str, await hass.async_add_executor_job(_get_attribute, client, EQUIPMENT_ID)
+    )
 
 
-def _connect_and_associate(client: DlmsClient):
+def _connect_and_associate(client: DlmsClient) -> None:
     """Connect and associate the client."""
     client.connect()
     client.associate()
 
 
-def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute):
+def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> Any:
     """Get COSEM attribute."""
     response = client.get(attribute)
     data = AXDR_DECODER.decode(response)
@@ -211,7 +216,7 @@ class DlmsConnection:
             # Ignore all errors on IO disconnect.
             self.client.transport.io.disconnect()
 
-    def get(self, attribute: cosem.CosemAttribute):
+    def get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute."""
         if not self.disconnected.is_set():
             try:
@@ -221,7 +226,7 @@ class DlmsConnection:
 
         return None
 
-    async def async_get(self, attribute: cosem.CosemAttribute):
+    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Asynchronously get the attribute."""
         return await self._hass.async_add_executor_job(self.get, attribute)
 
@@ -238,7 +243,7 @@ class DlmsConnection:
         self._ensure_disconnect_io()
         self.disconnected.set()
 
-    async def async_close(self):
+    async def async_close(self) -> None:
         """Asynchronously closes the connection."""
         await self._hass.async_add_executor_job(self.close)
 
@@ -256,17 +261,17 @@ class DlmsConnection:
     @cached_property
     def manufacturer(self) -> str:
         """Return the manufacturer."""
-        return self.entry.data[ATTR_MANUFACTURER]
+        return cast(str, self.entry.data[ATTR_MANUFACTURER])
 
     @cached_property
     def model(self) -> str:
         """Return the model."""
-        return self.entry.data[ATTR_MODEL]
+        return cast(str, self.entry.data[ATTR_MODEL])
 
     @cached_property
     def sw_version(self) -> str:
         """Return the software version."""
-        return self.entry.data[ATTR_SW_VERSION]
+        return cast(str, self.entry.data[ATTR_SW_VERSION])
 
     @classmethod
     async def async_check(

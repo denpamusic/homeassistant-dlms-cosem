@@ -1,10 +1,12 @@
 """The DLMS integration."""
 from __future__ import annotations
 
+from typing import cast
+
 from dlms_cosem.exceptions import CommunicationError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import CONF_HOST, DOMAIN
@@ -17,7 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up DLMS connection from a config entry."""
     connection = DlmsConnection(hass, entry)
 
-    async def async_close_connection(event=None):
+    async def async_close_connection(event: Event | None = None) -> None:
         """Close DLMS connection on HA Stop."""
         await connection.async_close()
 
@@ -48,4 +50,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except KeyError:
             pass
 
-    return unload_ok
+    return cast(bool, unload_ok)
