@@ -98,7 +98,7 @@ async def async_decode_flag_id(flag_id: str) -> str:
     """Decode the flag id."""
     dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
 
-    async with aiofiles.open(dlms_flag_ids_file, encoding="utf-8") as f:
+    async with aiofiles.open(dlms_flag_ids_file, mode="rb") as f:
         async for key, value in ijson.kvitems_async(f, ""):
             if key == flag_id:
                 return cast(str, value)
