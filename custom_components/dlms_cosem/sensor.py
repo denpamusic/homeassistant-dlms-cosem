@@ -257,14 +257,14 @@ class CosemSensor(SensorEntity):
     """Represents the COSEM sensor platform."""
 
     _attr_cosem_attribute: cosem.CosemAttribute
-    _connection: DlmsConnection
+    connection: DlmsConnection
     entity_description: CosemSensorEntityDescription
 
     def __init__(
         self, connection: DlmsConnection, description: CosemSensorEntityDescription
     ):
         """Initialize the COSEM sensor object."""
-        self._connection = connection
+        self.connection = connection
         self.entity_description = description
         self._attr_device_info = connection.device_info
         self._attr_unique_id = f"{connection.entry.unique_id}-{description.key}"
