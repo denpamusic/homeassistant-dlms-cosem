@@ -159,7 +159,7 @@ class DlmsConnection:
     client: DlmsClient
     disconnected: asyncio.Event
     entry: ConfigEntry
-    _reconnect_task: asyncio.Task | None
+    _reconnect_task: asyncio.Task[None] | None
     _hass: HomeAssistant
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
