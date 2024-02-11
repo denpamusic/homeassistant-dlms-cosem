@@ -44,10 +44,10 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     }
 )
 
-_LOGGER = logging.getLogger(__name__)
-
+DEVICE_INFO_GETTER = itemgetter(ATTR_MANUFACTURER, ATTR_MODEL, ATTR_EQUIPMENT_ID)
 IDENTIFY_TIMEOUT: Final = 10
 
+_LOGGER = logging.getLogger(__name__)
 
 async def validate_input(
     hass: HomeAssistant, data: MutableMapping[str, Any]
@@ -62,9 +62,6 @@ async def validate_input(
         raise CannotConnect from communtication_error
 
     return client
-
-
-_get_device_info = itemgetter(ATTR_MANUFACTURER, ATTR_MODEL, ATTR_EQUIPMENT_ID)
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
@@ -132,7 +129,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
     ) -> FlowResult:
         """Finish the integration config."""
         await self.hass.async_add_executor_job(self.client.disconnect)
-        manufacturer, model, equipment_id = _get_device_info(self.init_info)
+        manufacturer, model, equipment_id = DEVICE_INFO_GETTER(self.init_info)
         await self._async_set_unique_id(equipment_id)
 
         return self.async_create_entry(
