@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import MutableMapping
+from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 from datetime import timedelta
 from functools import cache, cached_property
@@ -39,8 +39,11 @@ from .const import (
 DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
-
 RECONNECT_INTERVAL: Final = timedelta(seconds=3)
+
+LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
+    "INC": lambda x: f"Mercury {x[3:6]}",
+}
 
 AXDR_DECODER = a_xdr.AXdrDecoder(
     encoding_conf=a_xdr.EncodingConf(
@@ -115,10 +118,11 @@ async def async_decode_logical_device_name(logical_device_name: str) -> tuple[st
     except KeyError:
         return "unknown", model
 
-    if flag_id == "INC":
-        model = f"Mercury {logical_device_name[3:6]}"
-
-    return manufacturer, model
+    return manufacturer, (
+        LOGICAL_DEVICE_NAME_FORMATTER[flag_id](logical_device_name)
+        if flag_id in LOGICAL_DEVICE_NAME_FORMATTER
+        else model
+    )
 
 
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
