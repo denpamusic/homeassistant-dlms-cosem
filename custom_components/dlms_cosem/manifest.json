@@ -10,7 +10,7 @@
   ],
   "documentation": "https://github.com/denpamusic/homeassistant-dlms-cosem",
   "integration_type": "device",
-  "iot_class": "local_poll",
+  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/denpamusic/homeassistant-dlms-cosem/issues",
   "loggers": [
     "dlms_cosem"
