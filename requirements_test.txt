@@ -1,6 +1,6 @@
 codespell==2.2.6
 mypy==1.8.0
-pre-commit==3.6.0
+pre-commit==3.6.1
 ruff==0.2.1
 tomli==2.0.1
 tox==4.12.1
