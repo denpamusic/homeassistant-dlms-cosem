@@ -277,7 +277,7 @@ class CosemSensor(SensorEntity):
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self) -> None:
         """Update entity state."""
-        response = await self._connection.async_get(self.cosem_attribute)
+        response = await self.connection.async_get(self.cosem_attribute)
         self._attr_native_value = (
             response if response is None else self.entity_description.value_fn(response)
         )
@@ -299,7 +299,7 @@ class CosemSensor(SensorEntity):
     @property
     def available(self) -> bool:
         """If entity is available."""
-        return not self._connection.disconnected.is_set()
+        return not self.connection.disconnected.is_set()
 
     @property
     def cosem_attribute(self) -> cosem.CosemAttribute:
