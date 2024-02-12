@@ -49,6 +49,7 @@ IDENTIFY_TIMEOUT: Final = 10
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def validate_input(
     hass: HomeAssistant, data: MutableMapping[str, Any]
 ) -> DlmsClient:
