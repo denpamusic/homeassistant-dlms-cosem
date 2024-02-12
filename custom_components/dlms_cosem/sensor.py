@@ -256,6 +256,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
 class CosemSensor(SensorEntity):
     """Represents the COSEM sensor platform."""
 
+    _attr_has_entity_name = True
     _attr_cosem_attribute: cosem.CosemAttribute
     connection: DlmsConnection
     entity_description: CosemSensorEntityDescription
