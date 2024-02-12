@@ -44,7 +44,6 @@ RECONNECT_INTERVAL: Final = timedelta(seconds=3)
 
 AXDR_DECODER = a_xdr.AXdrDecoder(
     encoding_conf=a_xdr.EncodingConf(
-        # pylint: disable=abstract-class-instantiated
         attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
     )
 )
