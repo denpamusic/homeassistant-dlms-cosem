@@ -19,14 +19,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up DLMS connection from a config entry."""
     connection = DlmsConnection(hass, entry)
 
-    async def async_close_connection(event: Event | None = None) -> None:
-        """Close DLMS connection on HA Stop."""
-        await connection.async_close()
-
-    entry.async_on_unload(
-        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_close_connection)
-    )
-
     try:
         await connection.async_setup()
     except CommunicationError as e:
@@ -36,6 +28,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ) from e
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = connection
+
+    async def _async_close_connection(event: Event | None = None) -> None:
+        """Close DLMS connection on HA Stop."""
+        await connection.async_close()
+
+    entry.async_on_unload(
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_close_connection)
+    )
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
