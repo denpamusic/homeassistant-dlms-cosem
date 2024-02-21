@@ -164,7 +164,7 @@ def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> Any:
 class DlmsConnection:
     """Represents DLMS connection."""
 
-    client: DlmsClient
+    client: DlmsClient | None
     disconnected: asyncio.Event
     entry: ConfigEntry
     _reconnect_task: asyncio.Task[None] | None
@@ -181,17 +181,17 @@ class DlmsConnection:
     async def async_setup(self) -> None:
         """Set up DLMS connection."""
         await self.async_connect()
-        self._reconnect_task = asyncio.create_task(self._reconnect_on_failure())
+        self._reconnect_task = asyncio.create_task(self._async_reconnect_on_failure())
 
     async def async_connect(self) -> None:
         """Asynchronously connect to the DLMS server."""
         await self._hass.async_add_executor_job(_connect_and_associate, self.client)
 
-    async def _reconnect_on_failure(self) -> None:
+    async def _async_reconnect_on_failure(self) -> None:
         """Task to initiate reconnect on the connection failure."""
         reconnect_interval = RECONNECT_INTERVAL.total_seconds()
         while await self.disconnected.wait():
-            await self._async_ensure_disconnect_io()
+            await self._async_ensure_disconnect()
             _LOGGER.warning("Connection lost, reconnecting...")
             try:
                 self.client = async_get_dlms_client(self.entry.data)
@@ -208,16 +208,25 @@ class DlmsConnection:
             finally:
                 await asyncio.sleep(reconnect_interval)
 
-    async def _async_ensure_disconnect_io(self) -> None:
+    async def _async_ensure_disconnect(self) -> None:
         """Asynchronously ensure that IO is disconnected."""
-        await self._hass.async_add_executor_job(self._ensure_disconnect_io)
+        await self._hass.async_add_executor_job(self._ensure_disconnect)
 
-    def _ensure_disconnect_io(self) -> None:
+    def _ensure_disconnect(self) -> None:
         """Ensure that IO is disconnected."""
+        if self.client:
+            force_io_disconnect = False
+            try:
+                self.client.disconnect()
+            except Exception:
+                # Ensure that IO is disconnected on any errors.
+                force_io_disconnect = True
 
-        with suppress(Exception):
-            # Ignore all errors on IO disconnect.
-            self.client.transport.io.disconnect()
+            if force_io_disconnect:
+                with suppress(Exception):
+                    self.client.transport.io.disconnect()
+
+            self.client = None
 
     def get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute."""
@@ -239,11 +248,7 @@ class DlmsConnection:
             # Cancel reconnect task.
             self._reconnect_task.cancel()
 
-        with suppress(Exception):
-            # Ignore all errors on disconnect.
-            self.client.disconnect()
-
-        self._ensure_disconnect_io()
+        self._ensure_disconnect()
         self.disconnected.set()
 
     async def async_close(self) -> None:
