@@ -108,6 +108,7 @@ async def async_decode_flag_id(flag_id: str) -> str:
     raise KeyError
 
 
+@cache
 async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
     """Decode logical device name."""
     flag_id = logical_device_name[0:3]
