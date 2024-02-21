@@ -45,7 +45,7 @@ LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
 }
 
-AXDR_DECODER = a_xdr.AXdrDecoder(
+A_XDR_DECODER = a_xdr.AXdrDecoder(
     encoding_conf=a_xdr.EncodingConf(
         attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
     )
@@ -157,7 +157,7 @@ def _connect_and_associate(client: DlmsClient) -> None:
 def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> Any:
     """Get COSEM attribute."""
     response = client.get(attribute)
-    data = AXDR_DECODER.decode(response)
+    data = A_XDR_DECODER.decode(response)
     return data[ATTR_DATA]
 
 
