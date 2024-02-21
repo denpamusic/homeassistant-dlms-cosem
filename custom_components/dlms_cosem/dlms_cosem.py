@@ -209,20 +209,16 @@ class DlmsConnection:
                 await asyncio.sleep(reconnect_interval)
 
     async def _async_ensure_disconnect(self) -> None:
-        """Asynchronously ensure that IO is disconnected."""
+        """Asynchronously ensure that client is disconnected."""
         await self._hass.async_add_executor_job(self._ensure_disconnect)
 
     def _ensure_disconnect(self) -> None:
-        """Ensure that IO is disconnected."""
+        """Ensure that client is disconnected."""
         if self.client:
-            force_io_disconnect = False
             try:
                 self.client.disconnect()
             except Exception:
                 # Ensure that IO is disconnected on any errors.
-                force_io_disconnect = True
-
-            if force_io_disconnect:
                 with suppress(Exception):
                     self.client.transport.io.disconnect()
 
