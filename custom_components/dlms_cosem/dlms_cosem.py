@@ -13,7 +13,6 @@ from typing import Any, Final, cast
 import aiofiles
 from dlms_cosem import a_xdr, cosem, enumerations
 from dlms_cosem.client import DlmsClient
-from dlms_cosem.exceptions import CommunicationError
 from dlms_cosem.io import BlockingTcpIO, HdlcTransport
 from dlms_cosem.security import LowLevelSecurityAuthentication
 from homeassistant.config_entries import ConfigEntry
@@ -203,15 +202,12 @@ class DlmsConnection:
                 self.disconnected.clear()
                 self.reconnect_attempt = 0
                 async_dispatcher_send(self._hass, SIGNAL_RECONNECTED)
-            except CommunicationError:
+            except Exception:  # pylint: disable=broad-except
                 _LOGGER.warning(
                     "Reconnect attempt failed, retrying in %d seconds...",
                     reconnect_interval,
                 )
                 self.reconnect_attempt += 1
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
-            finally:
                 await asyncio.sleep(reconnect_interval)
 
     async def _async_ensure_disconnect(self) -> None:
