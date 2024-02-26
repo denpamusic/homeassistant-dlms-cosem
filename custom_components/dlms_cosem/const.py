@@ -22,4 +22,4 @@ DEFAULT_MODEL: Final = "Smart meter"
 DEFAULT_ATTRIBUTE: Final = 2
 
 # Dispatcher signals
-SIGNAL_RECONNECTED: Final = "reconnected"
+SIGNAL_CONNECTED: Final = "connected"

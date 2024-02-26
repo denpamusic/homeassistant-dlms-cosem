@@ -22,18 +22,17 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfTemperature,
 )
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import Throttle
 
-from .const import DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_RECONNECTED
+from . import CosemEntity, CosemEntityDescription
+from .const import DEFAULT_ATTRIBUTE, DOMAIN
 from .dlms_cosem import DlmsConnection
 
 SCAN_INTERVAL = timedelta(seconds=15)
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 PARALLEL_UPDATES = 1
-MAX_RECONNECTS = 3
 
 
 def async_dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
@@ -47,10 +46,9 @@ def async_dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
-class CosemSensorEntityDescription(SensorEntityDescription):
+class CosemSensorEntityDescription(SensorEntityDescription, CosemEntityDescription):
     """Describes the COSEM sensor entity."""
 
-    obis: cosem.Obis
     value_fn: Callable
     attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface = enumerations.CosemInterface.REGISTER
@@ -264,12 +262,10 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
 )
 
 
-class CosemSensor(SensorEntity):
+class CosemSensor(CosemEntity, SensorEntity):
     """Represents the COSEM sensor platform."""
 
     _attr_has_entity_name = True
-    _attr_cosem_attribute: cosem.CosemAttribute
-    connection: DlmsConnection
     entity_description: CosemSensorEntityDescription
 
     def __init__(
@@ -292,30 +288,6 @@ class CosemSensor(SensorEntity):
         if response := await self.connection.async_get(self.cosem_attribute):
             self._attr_native_value = self.entity_description.value_fn(response)
 
-    async def async_added_to_hass(self) -> None:
-        """Run when entity about to be added to hass."""
-        await super().async_added_to_hass()
-        self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_RECONNECTED, self._reconnect_callback
-            )
-        )
-
-    @callback
-    def _reconnect_callback(self) -> None:
-        """Schedules update after the reconnect."""
-        self.async_schedule_update_ha_state(force_refresh=True)
-
-    @property
-    def available(self) -> bool:
-        """If entity is available."""
-        return self.connection.reconnect_attempt <= MAX_RECONNECTS
-
-    @property
-    def cosem_attribute(self) -> cosem.CosemAttribute:
-        """Return the COSEM attribute instance."""
-        return self._attr_cosem_attribute
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -325,7 +297,6 @@ async def async_setup_entry(
     """Set up the sensor platform."""
     connection: DlmsConnection = hass.data[DOMAIN][config_entry.entry_id]
     async_add_entities(
-        [CosemSensor(connection, description) for description in SENSOR_TYPES],
-        update_before_add=True,
+        CosemSensor(connection, description) for description in SENSOR_TYPES
     )
     return True

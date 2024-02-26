@@ -1,10 +1,9 @@
 """Contains the DLMS connection class."""
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import cache, cached_property
 import logging
 from pathlib import Path
@@ -20,6 +19,7 @@ from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.event import async_call_later
 import ijson
 import structlog
 
@@ -33,7 +33,7 @@ from .const import (
     DEFAULT_ATTRIBUTE,
     DEFAULT_MODEL,
     DOMAIN,
-    SIGNAL_RECONNECTED,
+    SIGNAL_CONNECTED,
 )
 
 DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
@@ -166,53 +166,47 @@ class DlmsConnection:
     """Represents DLMS connection."""
 
     client: DlmsClient | None
-    disconnected: asyncio.Event
+    connected: bool
     entry: ConfigEntry
-    reconnect_attempt: int
-    _reconnect_task: asyncio.Task[None] | None
-    _hass: HomeAssistant
+    reconnect_attempt: int | None
+    hass: HomeAssistant
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize a new DLMS/COSEM connection."""
         self.client = async_get_dlms_client(entry.data)
-        self.disconnected = asyncio.Event()
+        self.connected = False
         self.entry = entry
-        self.reconnect_attempt = 0
-        self._reconnect_task = None
-        self._hass = hass
+        self.reconnect_attempt = None
+        self.hass = hass
 
     async def async_setup(self) -> None:
         """Set up DLMS connection."""
         await self.async_connect()
-        self._reconnect_task = asyncio.create_task(self._async_reconnect_on_failure())
 
     async def async_connect(self) -> None:
         """Asynchronously connect to the DLMS server."""
-        await self._hass.async_add_executor_job(_connect_and_associate, self.client)
+        await self.hass.async_add_executor_job(_connect_and_associate, self.client)
+        self.reconnect_attempt = 0
+        self.connected = True
 
-    async def _async_reconnect_on_failure(self) -> None:
-        """Task to initiate reconnect on the connection failure."""
-        reconnect_interval = RECONNECT_INTERVAL.total_seconds()
-        while await self.disconnected.wait():
-            await self._async_ensure_disconnect()
-            _LOGGER.warning("Connection lost, reconnecting...")
-            try:
-                self.client = async_get_dlms_client(self.entry.data)
-                await self.async_connect()
-                self.disconnected.clear()
-                self.reconnect_attempt = 0
-                async_dispatcher_send(self._hass, SIGNAL_RECONNECTED)
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.warning(
-                    "Reconnect attempt failed, retrying in %d seconds...",
-                    reconnect_interval,
-                )
-                self.reconnect_attempt += 1
-                await asyncio.sleep(reconnect_interval)
+    async def _reconnect(self, event_time: datetime) -> None:
+        """Try to reconnect on connection failure."""
+        self.client = async_get_dlms_client(self.entry.data)
+        self.reconnect_attempt += 1
+
+        try:
+            await self.async_connect()
+        except Exception as err:
+            _LOGGER.warning(
+                "Re-connection attempt failed, retrying in the background: %s", err
+            )
+            async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
+        else:
+            async_dispatcher_send(self.hass, SIGNAL_CONNECTED)
 
     async def _async_ensure_disconnect(self) -> None:
         """Asynchronously ensure that client is disconnected."""
-        await self._hass.async_add_executor_job(self._ensure_disconnect)
+        await self.hass.async_add_executor_job(self._ensure_disconnect)
 
     def _ensure_disconnect(self) -> None:
         """Ensure that client is disconnected."""
@@ -228,30 +222,28 @@ class DlmsConnection:
 
     def get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute."""
-        if not self.disconnected.is_set():
+        if self.connected:
             try:
                 return _get_attribute(self.client, attribute)
-            except Exception:  # pylint: disable=broad-except
-                self.disconnected.set()
+            except Exception as err:
+                _LOGGER.warning("Connection lost, retrying in the background: %s", err)
+                self.connected = False
+                async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
 
         return None
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Asynchronously get the attribute."""
-        return await self._hass.async_add_executor_job(self.get, attribute)
+        return await self.hass.async_add_executor_job(self.get, attribute)
 
     def close(self) -> None:
         """Close connection."""
-        if self._reconnect_task:
-            # Cancel reconnect task.
-            self._reconnect_task.cancel()
-
         self._ensure_disconnect()
-        self.disconnected.set()
+        self.connected = False
 
     async def async_close(self) -> None:
         """Asynchronously closes the connection."""
-        await self._hass.async_add_executor_job(self.close)
+        await self.hass.async_add_executor_job(self.close)
 
     @cached_property
     def device_info(self) -> DeviceInfo:
