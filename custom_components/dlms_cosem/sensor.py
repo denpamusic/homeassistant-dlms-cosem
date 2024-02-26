@@ -23,6 +23,7 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import Throttle
 
@@ -232,6 +233,14 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         suggested_display_precision=2,
     ),
     CosemSensorEntityDescription(
+        key="active_tariff",
+        translation_key="active_tariff",
+        obis=cosem.Obis(0, 0, 96, 14, 0),
+        icon="mdi:progress-clock",
+        interface=enumerations.CosemInterface.DATA,
+        value_fn=lambda x: x,
+    ),
+    CosemSensorEntityDescription(
         key="internal_temperature",
         translation_key="internal_temperature",
         obis=cosem.Obis(0, 0, 96, 9, 0),
@@ -240,6 +249,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     CosemSensorEntityDescription(
         key="local_time",
@@ -250,14 +260,8 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
             time.datetime_from_bytes(x)[0]
         ),
         device_class=SensorDeviceClass.TIMESTAMP,
-    ),
-    CosemSensorEntityDescription(
-        key="active_tariff",
-        translation_key="active_tariff",
-        obis=cosem.Obis(0, 0, 96, 14, 0),
-        icon="mdi:progress-clock",
-        interface=enumerations.CosemInterface.DATA,
-        value_fn=lambda x: x,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
 )
 
