@@ -295,12 +295,12 @@ class CosemSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
+        await super().async_added_to_hass()
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass, SIGNAL_RECONNECTED, self._reconnect_callback
             )
         )
-        await super().async_added_to_hass()
 
     @callback
     def _reconnect_callback(self) -> None:
