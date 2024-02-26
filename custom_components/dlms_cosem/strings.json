@@ -23,6 +23,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "self_test": {
+        "name": "Self test result"
+      }
+    },
     "sensor": {
       "active_energy_tariff1": {
         "name": "Active energy tariff 1"

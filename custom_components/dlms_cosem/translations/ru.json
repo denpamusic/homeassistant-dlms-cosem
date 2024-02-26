@@ -23,6 +23,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "self_test": {
+        "name": "Самодиагностика"
+      }
+    },
     "sensor": {
       "active_energy_tariff1": {
         "name": "Электроэнергия (тариф 1)"

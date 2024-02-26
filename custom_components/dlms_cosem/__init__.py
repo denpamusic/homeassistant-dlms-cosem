@@ -19,7 +19,7 @@ from homeassistant.helpers.entity import Entity
 from .const import CONF_HOST, DOMAIN, SIGNAL_CONNECTED
 from .dlms_cosem import DlmsConnection
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 MAX_RECONNECTS = 3
 
