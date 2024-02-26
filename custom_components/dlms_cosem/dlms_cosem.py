@@ -1,6 +1,7 @@
 """Contains the DLMS connection class."""
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 from datetime import datetime, timedelta
@@ -68,6 +69,9 @@ EQUIPMENT_ID = cosem.CosemAttribute(
     instance=cosem.Obis(0, 0, 96, 1, 0),
     attribute=DEFAULT_ATTRIBUTE,
 )
+
+# Requests should be sent sequentially
+_PARALLEL_SEMAPHORE = asyncio.Semaphore(1)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -234,7 +238,10 @@ class DlmsConnection:
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Asynchronously get the attribute."""
-        return await self.hass.async_add_executor_job(self.get, attribute)
+        async with _PARALLEL_SEMAPHORE:
+            data = await self.hass.async_add_executor_job(self.get, attribute)
+
+        return data
 
     def close(self) -> None:
         """Close connection."""

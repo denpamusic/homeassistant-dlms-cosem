@@ -33,7 +33,7 @@ from .dlms_cosem import DlmsConnection
 
 SCAN_INTERVAL = timedelta(seconds=15)
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
-PARALLEL_UPDATES = 1
+PARALLEL_UPDATES = 0
 
 
 def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
