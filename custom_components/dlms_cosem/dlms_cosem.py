@@ -172,7 +172,7 @@ class DlmsConnection:
     client: DlmsClient | None
     connected: bool
     entry: ConfigEntry
-    reconnect_attempt: int | None
+    reconnect_attempt: int
     hass: HomeAssistant
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
@@ -180,7 +180,7 @@ class DlmsConnection:
         self.client = async_get_dlms_client(entry.data)
         self.connected = False
         self.entry = entry
-        self.reconnect_attempt = None
+        self.reconnect_attempt = -1
         self.hass = hass
 
     async def async_setup(self) -> None:
@@ -246,6 +246,7 @@ class DlmsConnection:
     def close(self) -> None:
         """Close connection."""
         self._ensure_disconnect()
+        self.reconnect_attempt = -1
         self.connected = False
 
     async def async_close(self) -> None:
