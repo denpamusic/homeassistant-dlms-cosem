@@ -250,6 +250,14 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
         device_class=SensorDeviceClass.TIMESTAMP,
     ),
+    CosemSensorEntityDescription(
+        key="active_tariff",
+        translation_key="active_tariff",
+        obis=cosem.Obis(0, 0, 96, 14, 0),
+        icon="mdi:progress-clock",
+        interface=enumerations.CosemInterface.DATA,
+        value_fn=lambda x: x,
+    ),
 )
 
 

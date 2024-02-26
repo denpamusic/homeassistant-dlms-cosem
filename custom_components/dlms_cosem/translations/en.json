@@ -45,6 +45,9 @@
       "active_power_total": {
         "name": "Active power total"
       },
+      "active_tariff": {
+        "name": "Active tariff"
+      },
       "current_l1": {
         "name": "Current L1"
       },

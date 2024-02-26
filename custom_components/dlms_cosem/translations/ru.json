@@ -45,6 +45,9 @@
       "active_power_total": {
         "name": "Активная мощность (полная)"
       },
+      "active_tariff": {
+        "name": "Текущий тариф"
+      },
       "current_l1": {
         "name": "Сила тока L1"
       },
