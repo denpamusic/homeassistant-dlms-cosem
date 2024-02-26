@@ -139,16 +139,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             data=self.init_info,
         )
 
-    async def _async_set_unique_id(self, uid: str) -> None:
-        """Set the config entry's unique ID (based on UID)."""
-        await self.async_set_unique_id(uid)
-        self._abort_if_unique_id_configured()
-
     async def async_step_identify_failed(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle issues that need transition await from progress step."""
         return self.async_abort(reason="identify_failed")
+
+    async def _async_set_unique_id(self, uid: str) -> None:
+        """Set the config entry's unique ID (based on UID)."""
+        await self.async_set_unique_id(uid)
+        self._abort_if_unique_id_configured()
 
     async def _async_identify_device(self) -> None:
         """Identify the device."""

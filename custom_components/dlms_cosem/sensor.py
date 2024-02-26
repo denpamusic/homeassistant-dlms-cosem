@@ -33,6 +33,7 @@ from .dlms_cosem import DlmsConnection
 SCAN_INTERVAL = timedelta(seconds=15)
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 PARALLEL_UPDATES = 1
+MAX_RECONNECTS = 3
 
 
 def async_dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
@@ -288,10 +289,8 @@ class CosemSensor(SensorEntity):
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self) -> None:
         """Update entity state."""
-        response = await self.connection.async_get(self.cosem_attribute)
-        self._attr_native_value = (
-            response if response is None else self.entity_description.value_fn(response)
-        )
+        if response := await self.connection.async_get(self.cosem_attribute):
+            self._attr_native_value = self.entity_description.value_fn(response)
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -310,7 +309,7 @@ class CosemSensor(SensorEntity):
     @property
     def available(self) -> bool:
         """If entity is available."""
-        return not self.connection.disconnected.is_set()
+        return self.connection.reconnect_attempt <= MAX_RECONNECTS
 
     @property
     def cosem_attribute(self) -> cosem.CosemAttribute:

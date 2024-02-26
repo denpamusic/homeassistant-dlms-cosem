@@ -168,6 +168,7 @@ class DlmsConnection:
     client: DlmsClient | None
     disconnected: asyncio.Event
     entry: ConfigEntry
+    reconnect_attempt: int
     _reconnect_task: asyncio.Task[None] | None
     _hass: HomeAssistant
 
@@ -176,6 +177,7 @@ class DlmsConnection:
         self.client = async_get_dlms_client(entry.data)
         self.disconnected = asyncio.Event()
         self.entry = entry
+        self.reconnect_attempt = 0
         self._reconnect_task = None
         self._hass = hass
 
@@ -198,12 +200,14 @@ class DlmsConnection:
                 self.client = async_get_dlms_client(self.entry.data)
                 await self.async_connect()
                 self.disconnected.clear()
+                self.reconnect_attempt = 0
                 async_dispatcher_send(self._hass, SIGNAL_RECONNECTED)
             except CommunicationError:
                 _LOGGER.warning(
                     "Reconnect attempt failed, retrying in %d seconds...",
                     reconnect_interval,
                 )
+                self.reconnect_attempt += 1
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
             finally:
@@ -222,8 +226,8 @@ class DlmsConnection:
                 # Ensure that IO is disconnected on any errors.
                 with suppress(Exception):
                     self.client.transport.io.disconnect()
-
-            self.client = None
+            finally:
+                self.client = None
 
     def get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute."""
