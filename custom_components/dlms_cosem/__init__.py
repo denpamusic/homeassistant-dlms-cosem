@@ -97,7 +97,7 @@ class CosemEntity(Entity):
     @property
     def available(self) -> bool:
         """If entity is available."""
-        if self.connection.reconnect_attempt:
+        if self.connection.reconnect_attempt is None:
             return self.connection.reconnect_attempt <= MAX_RECONNECTS
 
         return self.connection.connected
