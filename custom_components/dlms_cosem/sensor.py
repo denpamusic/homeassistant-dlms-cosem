@@ -35,7 +35,7 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 PARALLEL_UPDATES = 1
 
 
-def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
+def async_dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
     """Convert timezone between DLMS and HA."""
     utcoffset = dattim.utcoffset()
     if utcoffset is None:
@@ -247,7 +247,9 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         translation_key="local_time",
         obis=cosem.Obis(0, 0, 1, 0, 0),
         interface=enumerations.CosemInterface.CLOCK,
-        value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
+        value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
+            time.datetime_from_bytes(x)[0]
+        ),
         device_class=SensorDeviceClass.TIMESTAMP,
     ),
     CosemSensorEntityDescription(
@@ -312,7 +314,7 @@ class CosemSensor(SensorEntity):
 
     @property
     def cosem_attribute(self) -> cosem.CosemAttribute:
-        """Returns COSEM attribute instance."""
+        """Return the COSEM attribute instance."""
         return self._attr_cosem_attribute
 
 
