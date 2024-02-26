@@ -135,7 +135,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         await self._async_set_unique_id(equipment_id)
 
         return self.async_create_entry(
-            title=f"{manufacturer} {model} ({equipment_id})",
+            title=f"{manufacturer} {model}",
             data=self.init_info,
         )
 

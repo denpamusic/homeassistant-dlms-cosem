@@ -26,6 +26,7 @@ import structlog
 
 from .const import (
     ATTR_DATA,
+    ATTR_EQUIPMENT_ID,
     CONF_HOST,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
@@ -264,6 +265,7 @@ class DlmsConnection:
             identifiers={(DOMAIN, self.entry.unique_id)},
             manufacturer=self.manufacturer,
             model=self.model,
+            serial_number=self.equipment_id,
             sw_version=self.sw_version,
         )
 
@@ -281,6 +283,11 @@ class DlmsConnection:
     def sw_version(self) -> str:
         """Return the software version."""
         return cast(str, self.entry.data[ATTR_SW_VERSION])
+
+    @cached_property
+    def equipment_id(self) -> str:
+        """Return the serial number."""
+        return cast(str, self.entry.data[ATTR_EQUIPMENT_ID])
 
     @classmethod
     async def async_check(
