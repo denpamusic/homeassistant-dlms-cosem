@@ -113,12 +113,12 @@ class CosemEntity(Entity):
         return self.connection.connected
 
     @cached_property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return the unique ID."""
         return f"{self.connection.entry.unique_id}-{self.entity_description.key}"
 
     @cached_property
-    def cosem_attribute(self):
+    def cosem_attribute(self) -> cosem.CosemAttribute:
         """Return the COSEM attribute."""
         return cosem.CosemAttribute(
             interface=self.entity_description.interface,
