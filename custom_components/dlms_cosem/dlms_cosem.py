@@ -41,6 +41,7 @@ DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 RECONNECT_INTERVAL: Final = timedelta(seconds=3)
+UPDATE_TIMEOUT: Final = timedelta(seconds=5)
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
@@ -177,7 +178,7 @@ class DlmsConnection:
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize a new DLMS/COSEM connection."""
-        self.client = async_get_dlms_client(entry.data)
+        self.client = None
         self.connected = False
         self.entry = entry
         self.reconnect_attempt = -1
@@ -189,14 +190,15 @@ class DlmsConnection:
 
     async def async_connect(self) -> None:
         """Asynchronously connect to the DLMS server."""
+        self.client = async_get_dlms_client(self.entry.data)
         await self.hass.async_add_executor_job(_connect_and_associate, self.client)
         self.reconnect_attempt = 0
         self.connected = True
 
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
-        self.client = async_get_dlms_client(self.entry.data)
         self.reconnect_attempt += 1
+        await self._async_ensure_disconnect()
 
         try:
             await self.async_connect()
@@ -204,55 +206,56 @@ class DlmsConnection:
             _LOGGER.warning(
                 "Re-connection attempt failed, retrying in the background: %s", err
             )
-            await self._async_ensure_disconnect()
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         else:
             async_dispatcher_send(self.hass, SIGNAL_CONNECTED)
 
     async def _async_ensure_disconnect(self) -> None:
-        """Asynchronously ensure that client is disconnected."""
-        await self.hass.async_add_executor_job(self._ensure_disconnect)
+        """Add job to ensure that client is disconnected."""
 
-    def _ensure_disconnect(self) -> None:
-        """Ensure that client is disconnected."""
-        if self.client:
-            try:
-                self.client.disconnect()
-            except Exception:
-                # Ensure that IO is disconnected on any errors.
-                with suppress(Exception):
-                    self.client.transport.io.disconnect()
-            finally:
-                self.client = None
+        def _ensure_disconnect() -> None:
+            """Ensure that client is disconnected."""
+            if self.client:
+                try:
+                    self.client.disconnect()
+                except Exception:
+                    # Ensure that IO is disconnected on any errors.
+                    with suppress(Exception):
+                        self.client.transport.io.disconnect()
+                finally:
+                    self.client = None
 
-    def get(self, attribute: cosem.CosemAttribute) -> Any:
-        """Get the attribute."""
-        if self.connected:
-            try:
-                return _get_attribute(self.client, attribute)
-            except Exception as err:
-                _LOGGER.warning("Connection lost, retrying in the background: %s", err)
-                self.connected = False
-                async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
-
-        return None
+        await self.hass.async_add_executor_job(_ensure_disconnect)
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
-        """Asynchronously get the attribute."""
-        async with _PARALLEL_SEMAPHORE:
-            data = await self.hass.async_add_executor_job(self.get, attribute)
+        """Get the attribute."""
+        update_timeout = UPDATE_TIMEOUT.total_seconds()
 
-        return data
+        try:
+            async with _PARALLEL_SEMAPHORE:
+                return (
+                    None
+                    if not self.connected
+                    else await asyncio.wait_for(
+                        self.hass.async_add_executor_job(
+                            _get_attribute, self.client, attribute
+                        ),
+                        timeout=update_timeout,
+                    )
+                )
+        except TimeoutError:
+            _LOGGER.warning("Connection timed out, retrying in the background")
+        except Exception as err:
+            _LOGGER.warning("Connection lost, retrying in the background: %s", err)
 
-    def close(self) -> None:
-        """Close connection."""
-        self._ensure_disconnect()
         self.connected = False
-        self.reconnect_attempt = -1
+        async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
 
     async def async_close(self) -> None:
-        """Asynchronously closes the connection."""
-        await self.hass.async_add_executor_job(self.close)
+        """Close the connection."""
+        await self._async_ensure_disconnect()
+        self.connected = False
+        self.reconnect_attempt = -1
 
     @cached_property
     def device_info(self) -> DeviceInfo:
