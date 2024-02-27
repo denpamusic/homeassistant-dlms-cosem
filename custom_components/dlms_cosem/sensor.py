@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-import datetime as dt
 from datetime import timedelta
+from typing import Any
 
 from dlms_cosem import cosem, enumerations, time
 from homeassistant.components.sensor import (
@@ -27,8 +27,8 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import Throttle
 
-from . import CosemEntity, CosemEntityDescription
-from .const import DEFAULT_ATTRIBUTE, DOMAIN
+from . import CosemEntity, CosemEntityDescription, dlms_datetime_to_ha_datetime
+from .const import DOMAIN
 from .dlms_cosem import DlmsConnection
 
 SCAN_INTERVAL = timedelta(seconds=15)
@@ -36,23 +36,12 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 PARALLEL_UPDATES = 0
 
 
-def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
-    """Convert timezone between DLMS and HA."""
-    utcoffset = dattim.utcoffset()
-    if utcoffset is None:
-        return dattim
-
-    local_tz = dt.timezone(offset=dt.timedelta(seconds=-utcoffset.total_seconds()))
-    return dattim.replace(tzinfo=local_tz)
-
-
 @dataclass(frozen=True, kw_only=True, slots=True)
 class CosemSensorEntityDescription(SensorEntityDescription, CosemEntityDescription):
     """Describes the COSEM sensor entity."""
 
-    value_fn: Callable
-    attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface = enumerations.CosemInterface.REGISTER
+    value_fn: Callable[[Any], Any]
 
 
 SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
@@ -267,7 +256,6 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
 class CosemSensor(CosemEntity, SensorEntity):
     """Represents the COSEM sensor platform."""
 
-    _attr_has_entity_name = True
     entity_description: CosemSensorEntityDescription
 
     def __init__(
@@ -276,13 +264,6 @@ class CosemSensor(CosemEntity, SensorEntity):
         """Initialize the COSEM sensor object."""
         self.connection = connection
         self.entity_description = description
-        self._attr_cosem_attribute = cosem.CosemAttribute(
-            interface=self.entity_description.interface,
-            instance=self.entity_description.obis,
-            attribute=self.entity_description.attribute,
-        )
-        self._attr_device_info = connection.device_info
-        self._attr_unique_id = f"{connection.entry.unique_id}-{description.key}"
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self) -> None:

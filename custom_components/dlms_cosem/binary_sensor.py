@@ -19,7 +19,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import Throttle
 
 from . import CosemEntity, CosemEntityDescription
-from .const import DEFAULT_ATTRIBUTE, DOMAIN
+from .const import DOMAIN
 from .dlms_cosem import DlmsConnection
 
 SCAN_INTERVAL = timedelta(seconds=15)
@@ -33,9 +33,8 @@ class CosemBinarySensorEntityDescription(
 ):
     """Describes the COSEM binary sensor entity."""
 
-    value_fn: Callable[[Any], bool]
-    attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface = enumerations.CosemInterface.DATA
+    value_fn: Callable[[Any], bool]
 
 
 BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
@@ -53,7 +52,6 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
 class CosemBinarySensor(CosemEntity, BinarySensorEntity):
     """Represents the COSEM binary sensor platform."""
 
-    _attr_has_entity_name = True
     entity_description: CosemBinarySensorEntityDescription
 
     def __init__(
@@ -64,13 +62,6 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
         """Initialize the COSEM sensor object."""
         self.connection = connection
         self.entity_description = description
-        self._attr_cosem_attribute = cosem.CosemAttribute(
-            interface=self.entity_description.interface,
-            instance=self.entity_description.obis,
-            attribute=self.entity_description.attribute,
-        )
-        self._attr_device_info = connection.device_info
-        self._attr_unique_id = f"{connection.entry.unique_id}-{description.key}"
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self) -> None:

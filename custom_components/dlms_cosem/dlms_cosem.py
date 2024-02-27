@@ -19,7 +19,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_call_later
 import ijson
 import structlog
@@ -33,7 +32,6 @@ from .const import (
     CONF_PORT,
     DEFAULT_ATTRIBUTE,
     DEFAULT_MODEL,
-    DOMAIN,
     SIGNAL_CONNECTED,
 )
 
@@ -184,12 +182,8 @@ class DlmsConnection:
         self.reconnect_attempt = -1
         self.hass = hass
 
-    async def async_setup(self) -> None:
-        """Set up DLMS connection."""
-        await self.async_connect()
-
     async def async_connect(self) -> None:
-        """Asynchronously connect to the DLMS server."""
+        """Connect to the DLMS server."""
         self.client = async_get_dlms_client(self.entry.data)
         await self.hass.async_add_executor_job(_connect_and_associate, self.client)
         self.reconnect_attempt = 0
@@ -211,7 +205,7 @@ class DlmsConnection:
             async_dispatcher_send(self.hass, SIGNAL_CONNECTED)
 
     async def _async_ensure_disconnect(self) -> None:
-        """Add job to ensure that client is disconnected."""
+        """Add executor job to ensure that client is disconnected."""
 
         def _ensure_disconnect() -> None:
             """Ensure that client is disconnected."""
@@ -256,18 +250,6 @@ class DlmsConnection:
         await self._async_ensure_disconnect()
         self.connected = False
         self.reconnect_attempt = -1
-
-    @cached_property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-        return DeviceInfo(
-            name=f"{self.manufacturer} {self.model}",
-            identifiers={(DOMAIN, self.entry.unique_id)},
-            manufacturer=self.manufacturer,
-            model=self.model,
-            serial_number=self.equipment_id,
-            sw_version=self.sw_version,
-        )
 
     @cached_property
     def manufacturer(self) -> str:

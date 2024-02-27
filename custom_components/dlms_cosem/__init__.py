@@ -1,7 +1,8 @@
 """The DLMS integration."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+import datetime as dt
+from functools import cached_property
 from typing import cast
 
 from dlms_cosem import cosem, enumerations
@@ -14,9 +15,9 @@ from homeassistant.helpers.dispatcher import (
     async_dispatcher_connect,
     async_dispatcher_send,
 )
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import DeviceInfo, Entity, EntityDescription
 
-from .const import CONF_HOST, DOMAIN, SIGNAL_CONNECTED
+from .const import CONF_HOST, DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_CONNECTED
 from .dlms_cosem import DlmsConnection
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -29,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     connection = DlmsConnection(hass, entry)
 
     try:
-        await connection.async_setup()
+        await connection.async_connect()
     except CommunicationError as e:
         await connection.async_close()
         raise ConfigEntryNotReady(
@@ -64,21 +65,30 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return cast(bool, unload_ok)
 
 
-@dataclass(frozen=True, kw_only=True, slots=True)
-class CosemEntityDescription:
+def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
+    """Convert timezone between DLMS and HA."""
+    utcoffset = dattim.utcoffset()
+    if utcoffset is None:
+        return dattim
+
+    local_tz = dt.timezone(offset=dt.timedelta(seconds=-utcoffset.total_seconds()))
+    return dattim.replace(tzinfo=local_tz)
+
+
+class CosemEntityDescription(EntityDescription):
     """Describes the COSEM entity."""
 
-    obis: cosem.Obis
-    attribute: int
+    attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface
+    obis: cosem.Obis
 
 
 class CosemEntity(Entity):
     """Represents the COSEM entity."""
 
+    _attr_has_entity_name = True
     connection: DlmsConnection
     entity_description: CosemEntityDescription
-    _attr_cosem_attribute: cosem.CosemAttribute
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -102,7 +112,28 @@ class CosemEntity(Entity):
 
         return self.connection.connected
 
-    @property
-    def cosem_attribute(self) -> cosem.CosemAttribute:
-        """Return the COSEM attribute instance."""
-        return self._attr_cosem_attribute
+    @cached_property
+    def unique_id(self):
+        """Return the unique ID."""
+        return f"{self.connection.entry.unique_id}-{self.entity_description.key}"
+
+    @cached_property
+    def cosem_attribute(self):
+        """Return the COSEM attribute."""
+        return cosem.CosemAttribute(
+            interface=self.entity_description.interface,
+            instance=self.entity_description.obis,
+            attribute=self.entity_description.attribute,
+        )
+
+    @cached_property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            name=f"{self.connection.manufacturer} {self.connection.model}",
+            identifiers={(DOMAIN, self.connection.entry.unique_id)},
+            manufacturer=self.connection.manufacturer,
+            model=self.connection.model,
+            serial_number=self.connection.equipment_id,
+            sw_version=self.connection.sw_version,
+        )
