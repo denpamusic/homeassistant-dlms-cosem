@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
 
 from dlms_cosem import cosem, enumerations
 from homeassistant.components.binary_sensor import (
@@ -32,7 +33,7 @@ class CosemBinarySensorEntityDescription(
 ):
     """Describes the COSEM binary sensor entity."""
 
-    value_fn: Callable
+    value_fn: Callable[[Any], bool]
     attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface = enumerations.CosemInterface.DATA
 
@@ -44,7 +45,7 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         obis=cosem.Obis(0, 0, 97, 97, 0),
-        value_fn=lambda x: True if int.from_bytes(x) != 0 else False,
+        value_fn=lambda x: int.from_bytes(x) != 0,
     ),
 )
 
