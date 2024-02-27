@@ -39,7 +39,8 @@ DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 RECONNECT_INTERVAL: Final = timedelta(seconds=3)
-UPDATE_TIMEOUT: Final = timedelta(seconds=5)
+
+TIMEOUT: Final = 5
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
@@ -82,7 +83,7 @@ structlog.configure(
 
 def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
     """Get DLMS client."""
-    tcp_io = BlockingTcpIO(host=data[CONF_HOST], port=data[CONF_PORT], timeout=10)
+    tcp_io = BlockingTcpIO(host=data[CONF_HOST], port=data[CONF_PORT], timeout=TIMEOUT)
     hdlc_transport = HdlcTransport(
         client_logical_address=LOGICAL_CLIENT_ADDRESS,
         server_logical_address=LOGICAL_SERVER_ADDRESS,
@@ -233,20 +234,19 @@ class DlmsConnection:
 
         await self.hass.async_add_executor_job(_disconnect)
 
-    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
+    async def _async_get_attribute(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute."""
+        if self.connected:
+            async with asyncio.timeout(TIMEOUT):
+                return await self.hass.async_add_executor_job(
+                    _get_attribute, self.client, attribute
+                )
+
+    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
+        """Get the attribute or initiate reconnect on failure."""
         try:
             async with _PARALLEL_SEMAPHORE:
-                return (
-                    None
-                    if not self.connected
-                    else await asyncio.wait_for(
-                        self.hass.async_add_executor_job(
-                            _get_attribute, self.client, attribute
-                        ),
-                        timeout=UPDATE_TIMEOUT.total_seconds(),
-                    )
-                )
+                return await self._async_get_attribute(attribute)
         except TimeoutError:
             _LOGGER.warning("Connection timed out, retrying in the background")
         except Exception as err:
