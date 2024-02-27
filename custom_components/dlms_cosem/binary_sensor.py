@@ -51,7 +51,7 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
 
 
 class CosemBinarySensor(CosemEntity, BinarySensorEntity):
-    """Represents the COSEM sensor platform."""
+    """Represents the COSEM binary sensor platform."""
 
     _attr_has_entity_name = True
     entity_description: CosemBinarySensorEntityDescription
