@@ -246,8 +246,8 @@ class DlmsConnection:
     def close(self) -> None:
         """Close connection."""
         self._ensure_disconnect()
-        self.reconnect_attempt = -1
         self.connected = False
+        self.reconnect_attempt = -1
 
     async def async_close(self) -> None:
         """Asynchronously closes the connection."""
