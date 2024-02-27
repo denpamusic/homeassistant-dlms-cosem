@@ -203,7 +203,7 @@ class DlmsConnection:
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
         self.reconnect_attempt += 1
-        await self._async_ensure_disconnect()
+        await self._async_disconnect()
 
         try:
             await self.async_connect()
@@ -215,22 +215,20 @@ class DlmsConnection:
         else:
             async_dispatcher_send(self.hass, SIGNAL_CONNECTED)
 
-    async def _async_ensure_disconnect(self) -> None:
-        """Add executor job to ensure that client is disconnected."""
+    async def _async_disconnect(self) -> None:
+        """Add executor job to disassociate and disconnect the client."""
 
-        def _ensure_disconnect() -> None:
-            """Ensure that client is disconnected."""
+        def _disconnect() -> None:
+            """Disassociate and disconnect the client."""
             if self.client:
-                try:
-                    self.client.disconnect()
-                except Exception:
-                    # Ensure that IO is disconnected on any errors.
+                disconnect_fn = ("release_association", "disconnect")
+                for func in disconnect_fn:
                     with suppress(Exception):
-                        self.client.transport.io.disconnect()
-                finally:
-                    self.client = None
+                        getattr(self.client, func)()
 
-        await self.hass.async_add_executor_job(_ensure_disconnect)
+                self.client = None
+
+        await self.hass.async_add_executor_job(_disconnect)
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute."""
@@ -258,7 +256,7 @@ class DlmsConnection:
 
     async def async_close(self) -> None:
         """Close the connection."""
-        await self._async_ensure_disconnect()
+        await self._async_disconnect()
         self.connected = False
         self.reconnect_attempt = -1
 
