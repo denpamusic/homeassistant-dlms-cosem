@@ -232,8 +232,6 @@ class DlmsConnection:
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute."""
-        update_timeout = UPDATE_TIMEOUT.total_seconds()
-
         try:
             async with _PARALLEL_SEMAPHORE:
                 return (
@@ -243,7 +241,7 @@ class DlmsConnection:
                         self.hass.async_add_executor_job(
                             _get_attribute, self.client, attribute
                         ),
-                        timeout=update_timeout,
+                        timeout=UPDATE_TIMEOUT.total_seconds(),
                     )
                 )
         except TimeoutError:
