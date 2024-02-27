@@ -20,7 +20,7 @@ from homeassistant.util import Throttle
 
 from . import CosemEntity, CosemEntityDescription
 from .const import DOMAIN
-from .dlms_cosem import DlmsConnection
+from .dlms_cosem import DlmsConnection, async_extract_error_codes
 
 SCAN_INTERVAL = timedelta(seconds=15)
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
@@ -44,7 +44,7 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         obis=cosem.Obis(0, 0, 97, 97, 0),
-        value_fn=lambda x: int.from_bytes(x) != 0,
+        value_fn=lambda x: bool(x),
     ),
 )
 
@@ -67,11 +67,12 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
     async def async_update(self) -> None:
         """Update entity state."""
         if response := await self.connection.async_get(self.cosem_attribute):
+            if self.entity_description.key == "self_test" and (
+                response := async_extract_error_codes(response)
+            ):
+                self._attr_extra_state_attributes = {"error_codes": ", ".join(response)}
+
             self._attr_is_on = self.entity_description.value_fn(response)
-            if self.entity_description.key == "self_test":
-                self._attr_extra_state_attributes = {
-                    "error_code": int.from_bytes(response)
-                }
 
 
 async def async_setup_entry(

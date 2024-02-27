@@ -27,8 +27,8 @@
       "self_test": {
         "name": "Самодиагностика",
         "state_attributes": {
-          "error_code": {
-            "name": "Код ошибки"
+          "error_codes": {
+            "name": "Коды ошибок"
           }
         }
       }

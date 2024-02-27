@@ -129,6 +129,17 @@ async def async_decode_logical_device_name(logical_device_name: str) -> tuple[st
     )
 
 
+def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str]:
+    """Extract the error code list from bytes."""
+    error_length = len(error_code) * 8
+    error_number = int.from_bytes(error_code, byteorder="big")
+    return [
+        f"{prefix}{(index + 1):02d}"
+        for index in range(0, error_length - 1)
+        if error_number & (1 << index)
+    ]
+
+
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the logical device name."""
     data = cast(
