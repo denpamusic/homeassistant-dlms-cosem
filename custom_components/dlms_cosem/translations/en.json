@@ -25,7 +25,12 @@
   "entity": {
     "binary_sensor": {
       "self_test": {
-        "name": "Self test result"
+        "name": "Self test result",
+        "state_attributes": {
+          "error_code": {
+            "name": "Error code"
+          }
+        }
       }
     },
     "sensor": {

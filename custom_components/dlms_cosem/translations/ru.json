@@ -26,6 +26,11 @@
     "binary_sensor": {
       "self_test": {
         "name": "Самодиагностика"
+      },
+      "state_attributes": {
+        "error_code": {
+          "name": "Код ошибки"
+        }
       }
     },
     "sensor": {
