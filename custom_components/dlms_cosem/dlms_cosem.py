@@ -70,9 +70,6 @@ EQUIPMENT_ID = cosem.CosemAttribute(
     attribute=DEFAULT_ATTRIBUTE,
 )
 
-# Requests should be sent sequentially
-_PARALLEL_SEMAPHORE = asyncio.Semaphore(1)
-
 _LOGGER = logging.getLogger(__name__)
 
 # Setup structlog for the dlms-cosem package.
@@ -180,19 +177,21 @@ def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> Any:
 class DlmsConnection:
     """Represents DLMS connection."""
 
+    _update_semaphore: asyncio.Semaphore
     client: DlmsClient | None
     connected: bool
     entry: ConfigEntry
-    reconnect_attempt: int
     hass: HomeAssistant
+    reconnect_attempt: int
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize a new DLMS/COSEM connection."""
+        self._update_semaphore = asyncio.Semaphore(1)
         self.client = None
         self.connected = False
         self.entry = entry
-        self.reconnect_attempt = -1
         self.hass = hass
+        self.reconnect_attempt = -1
 
     async def async_connect(self) -> None:
         """Connect to the DLMS server."""
@@ -245,7 +244,7 @@ class DlmsConnection:
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute or initiate reconnect on failure."""
         try:
-            async with _PARALLEL_SEMAPHORE:
+            async with self._update_semaphore:
                 return await self._async_get_attribute(attribute)
         except TimeoutError:
             _LOGGER.warning("Connection timed out, retrying in the background")
