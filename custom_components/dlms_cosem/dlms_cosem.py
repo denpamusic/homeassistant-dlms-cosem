@@ -221,11 +221,7 @@ class DlmsConnection:
         def _disconnect() -> None:
             """Disassociate and disconnect the client."""
             if self.client:
-                disconnect_fn = (
-                    self.client.release_association,
-                    self.client.disconnect,
-                )
-                for func in disconnect_fn:
+                for func in (self.client.release_association, self.client.disconnect):
                     with suppress(Exception):
                         func()
 
