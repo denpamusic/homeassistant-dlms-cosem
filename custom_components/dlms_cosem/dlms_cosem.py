@@ -46,12 +46,6 @@ LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
 }
 
-A_XDR_DECODER = a_xdr.AXdrDecoder(
-    encoding_conf=a_xdr.EncodingConf(
-        attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
-    )
-)
-
 LOGICAL_DEVICE_NAME = cosem.CosemAttribute(
     interface=enumerations.CosemInterface.DATA,
     instance=cosem.Obis(0, 0, 42, 0, 0),
@@ -68,6 +62,12 @@ EQUIPMENT_ID = cosem.CosemAttribute(
     interface=enumerations.CosemInterface.DATA,
     instance=cosem.Obis(0, 0, 96, 1, 0),
     attribute=DEFAULT_ATTRIBUTE,
+)
+
+A_XDR_DECODER = a_xdr.AXdrDecoder(
+    encoding_conf=a_xdr.EncodingConf(
+        attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
+    )
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -160,12 +160,6 @@ async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str
     )
 
 
-def _connect_and_associate(client: DlmsClient) -> None:
-    """Connect and associate the client."""
-    client.connect()
-    client.associate()
-
-
 def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> Any:
     """Get COSEM attribute."""
     response = client.get(attribute)
@@ -194,10 +188,13 @@ class DlmsConnection:
 
     async def async_connect(self) -> None:
         """Connect to the DLMS server."""
-        self.client = async_get_dlms_client(self.entry.data)
-        await self.hass.async_add_executor_job(_connect_and_associate, self.client)
+        client = async_get_dlms_client(self.entry.data)
+        for func in (client.connect, client.associate):
+            await self.hass.async_add_executor_job(func)
+
         self.reconnect_attempt = 0
         self.connected = True
+        self.client = client
 
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
@@ -281,5 +278,7 @@ class DlmsConnection:
     ) -> DlmsClient:
         """Check DLMS meter connection."""
         client = async_get_dlms_client(data)
-        await hass.async_add_executor_job(_connect_and_associate, client)
+        for func in (client.connect, client.associate):
+            await hass.async_add_executor_job(func)
+
         return client
