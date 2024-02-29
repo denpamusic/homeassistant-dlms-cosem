@@ -79,20 +79,19 @@ structlog.configure(
 
 
 def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
-    """Get DLMS client."""
-    tcp_io = BlockingTcpIO(host=data[CONF_HOST], port=data[CONF_PORT], timeout=TIMEOUT)
-    hdlc_transport = HdlcTransport(
-        client_logical_address=LOGICAL_CLIENT_ADDRESS,
-        server_logical_address=LOGICAL_SERVER_ADDRESS,
-        server_physical_address=data[CONF_PHYSICAL_ADDRESS],
-        io=tcp_io,
-    )
-    low_level_security_authentication = LowLevelSecurityAuthentication(
-        secret=bytes(data[CONF_PASSWORD], encoding="utf-8")
-    )
+    """Get the DLMS client."""
     return DlmsClient(
-        transport=hdlc_transport,
-        authentication=low_level_security_authentication,
+        authentication=LowLevelSecurityAuthentication(
+            secret=bytes(data[CONF_PASSWORD], encoding="utf-8")
+        ),
+        transport=HdlcTransport(
+            client_logical_address=LOGICAL_CLIENT_ADDRESS,
+            server_logical_address=LOGICAL_SERVER_ADDRESS,
+            server_physical_address=data[CONF_PHYSICAL_ADDRESS],
+            io=BlockingTcpIO(
+                host=data[CONF_HOST], port=data[CONF_PORT], timeout=TIMEOUT
+            ),
+        ),
     )
 
 
