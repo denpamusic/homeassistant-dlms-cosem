@@ -139,30 +139,25 @@ def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str
 
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the logical device name."""
-    data = cast(
-        bytes,
-        await hass.async_add_executor_job(_get_attribute, client, LOGICAL_DEVICE_NAME),
-    )
+    data = cast(bytes, await _async_get_attribute(hass, client, LOGICAL_DEVICE_NAME))
     return data.decode(encoding="utf-8")
 
 
 async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the software version."""
-    return cast(
-        str, await hass.async_add_executor_job(_get_attribute, client, SOFTWARE_PACKAGE)
-    )
+    return cast(str, await _async_get_attribute(hass, client, SOFTWARE_PACKAGE))
 
 
 async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the equipment identifier."""
-    return cast(
-        str, await hass.async_add_executor_job(_get_attribute, client, EQUIPMENT_ID)
-    )
+    return cast(str, await _async_get_attribute(hass, client, EQUIPMENT_ID))
 
 
-def _get_attribute(client: DlmsClient, attribute: cosem.CosemAttribute) -> Any:
-    """Get COSEM attribute."""
-    response = client.get(attribute)
+async def _async_get_attribute(
+    hass: HomeAssistant, client: DlmsClient, attribute: cosem.CosemAttribute
+) -> Any:
+    """Get the COSEM attribute."""
+    response = await hass.async_add_executor_job(client.get, attribute)
     data = A_XDR_DECODER.decode(response)
     return data[ATTR_DATA]
 
@@ -188,13 +183,14 @@ class DlmsConnection:
 
     async def async_connect(self) -> None:
         """Connect to the DLMS server."""
-        client = async_get_dlms_client(self.entry.data)
-        for func in (client.connect, client.associate):
-            await self.hass.async_add_executor_job(func)
+        if not self.connected:
+            client = async_get_dlms_client(self.entry.data)
+            for func in (client.connect, client.associate):
+                await self.hass.async_add_executor_job(func)
 
-        self.reconnect_attempt = 0
-        self.connected = True
-        self.client = client
+            self.reconnect_attempt = 0
+            self.connected = True
+            self.client = client
 
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
@@ -212,36 +208,30 @@ class DlmsConnection:
             async_dispatcher_send(self.hass, SIGNAL_CONNECTED)
 
     async def _async_disconnect(self) -> None:
-        """Add executor job to disassociate and disconnect the client."""
+        """Disassociate and disconnect the client."""
+        if self.client:
+            for func in (self.client.release_association, self.client.disconnect):
+                with suppress(Exception):
+                    await self.hass.async_add_executor_job(func)
 
-        def _disconnect() -> None:
-            """Disassociate and disconnect the client."""
-            if self.client:
-                for func in (self.client.release_association, self.client.disconnect):
-                    with suppress(Exception):
-                        func()
-
-                self.client = None
-
-        await self.hass.async_add_executor_job(_disconnect)
-
-    async def _async_get_attribute(self, attribute: cosem.CosemAttribute) -> Any:
-        """Get the attribute."""
-        if self.connected:
-            async with asyncio.timeout(TIMEOUT):
-                return await self.hass.async_add_executor_job(
-                    _get_attribute, self.client, attribute
-                )
+            self.client = None
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute or initiate reconnect on failure."""
+        await self._update_semaphore.acquire()
         try:
-            async with self._update_semaphore:
-                return await self._async_get_attribute(attribute)
+            async with asyncio.timeout(TIMEOUT):
+                return (
+                    await _async_get_attribute(self.hass, self.client, attribute)
+                    if self.connected
+                    else None
+                )
         except TimeoutError:
             _LOGGER.warning("Connection timed out, retrying in the background")
         except Exception as err:
             _LOGGER.warning("Connection lost, retrying in the background: %s", err)
+        finally:
+            self._update_semaphore.release()
 
         self.connected = False
         async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
