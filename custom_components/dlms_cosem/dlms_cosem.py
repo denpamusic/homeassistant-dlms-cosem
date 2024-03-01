@@ -201,7 +201,7 @@ class DlmsConnection:
             await self.async_connect()
         except Exception as err:
             _LOGGER.warning(
-                "Re-connection attempt failed, retrying in the background: %s", err
+                "Re-connect attempt failed, retrying in the background: %s", err
             )
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         else:
