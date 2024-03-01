@@ -153,13 +153,41 @@ async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str
     return cast(str, await _async_get_attribute(hass, client, EQUIPMENT_ID))
 
 
+async def _async_connect(hass: HomeAssistant, client: DlmsClient) -> None:
+    """Add an executor job to initiate the connection."""
+
+    def _connect() -> None:
+        """Initiate the connection."""
+        client.connect()
+        client.associate()
+
+    await hass.async_add_executor_job(_connect)
+
+
+async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
+    """Add an executor job to close the connection."""
+
+    def _disconnect() -> None:
+        """Close the connection."""
+        for func in (client.release_association, client.disconnect):
+            with suppress(Exception):
+                # Ignore any exceptions on disconnect.
+                func()
+
+    await hass.async_add_executor_job(_disconnect)
+
+
 async def _async_get_attribute(
     hass: HomeAssistant, client: DlmsClient, attribute: cosem.CosemAttribute
 ) -> Any:
-    """Get the COSEM attribute."""
-    response = await hass.async_add_executor_job(client.get, attribute)
-    data = A_XDR_DECODER.decode(response)
-    return data[ATTR_DATA]
+    """Add an executor job to get the COSEM attribute and decode it."""
+
+    def _get_attibute() -> Any:
+        """Get the COSEM attribute and decode it."""
+        response = client.get(attribute)
+        return A_XDR_DECODER.decode(response)[ATTR_DATA]
+
+    return await hass.async_add_executor_job(_get_attibute)
 
 
 class DlmsConnection:
@@ -184,13 +212,10 @@ class DlmsConnection:
     async def async_connect(self) -> None:
         """Connect to the DLMS server."""
         if not self.connected:
-            client = async_get_dlms_client(self.entry.data)
-            for func in (client.connect, client.associate):
-                await self.hass.async_add_executor_job(func)
-
+            self.client = async_get_dlms_client(self.entry.data)
+            await _async_connect(self.hass, self.client)
             self.reconnect_attempt = 0
             self.connected = True
-            self.client = client
 
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
@@ -210,10 +235,7 @@ class DlmsConnection:
     async def _async_disconnect(self) -> None:
         """Disassociate and disconnect the client."""
         if self.client:
-            for func in (self.client.release_association, self.client.disconnect):
-                with suppress(Exception):
-                    await self.hass.async_add_executor_job(func)
-
+            await _async_disconnect(self.hass, self.client)
             self.client = None
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
@@ -269,7 +291,5 @@ class DlmsConnection:
     ) -> DlmsClient:
         """Check DLMS meter connection."""
         client = async_get_dlms_client(data)
-        for func in (client.connect, client.associate):
-            await hass.async_add_executor_job(func)
-
+        await _async_connect(hass, client)
         return client
