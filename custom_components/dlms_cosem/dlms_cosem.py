@@ -219,10 +219,9 @@ class DlmsConnection:
 
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
-        self.reconnect_attempt += 1
-        await self._async_disconnect()
-
         try:
+            self.reconnect_attempt += 1
+            await self._async_disconnect()
             await self.async_connect()
         except Exception as err:
             _LOGGER.warning(
