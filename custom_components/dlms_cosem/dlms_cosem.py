@@ -226,15 +226,16 @@ class DlmsConnection:
                     if self.connected
                     else None
                 )
-        except TimeoutError:
-            _LOGGER.warning("Connection timed out, retrying in the background")
         except Exception as err:
-            _LOGGER.warning("Connection lost, retrying in the background: %s", err)
+            if isinstance(err, TimeoutError):
+                _LOGGER.warning("Connection timed out, retrying in the background")
+            else:
+                _LOGGER.warning("Connection lost, retrying in the background: %s", err)
+
+            self.connected = False
+            async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         finally:
             self._update_semaphore.release()
-
-        self.connected = False
-        async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
 
     async def async_close(self) -> None:
         """Close the connection."""
