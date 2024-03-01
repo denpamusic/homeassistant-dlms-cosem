@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 from functools import cached_property
-from typing import cast
+from typing import Final, cast
 
 from dlms_cosem import cosem, enumerations
 from dlms_cosem.exceptions import CommunicationError
@@ -22,7 +22,7 @@ from .dlms_cosem import DlmsConnection
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
-MAX_RECONNECTS = 3
+RETRIES_UNTIL_UNAVAILABLE: Final = 3
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -108,7 +108,7 @@ class CosemEntity(Entity):
     def available(self) -> bool:
         """If entity is available."""
         if self.connection.reconnect_attempt >= 0:
-            return self.connection.reconnect_attempt <= MAX_RECONNECTS
+            return self.connection.reconnect_attempt <= RETRIES_UNTIL_UNAVAILABLE
 
         return self.connection.connected
 
