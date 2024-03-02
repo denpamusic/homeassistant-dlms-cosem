@@ -44,7 +44,7 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         obis=cosem.Obis(0, 0, 97, 97, 0),
-        value_fn=lambda x: bool(x),
+        value_fn=lambda x: bool(int.from_bytes(x)),
     ),
 )
 
@@ -67,12 +67,11 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
     async def async_update(self) -> None:
         """Update entity state."""
         if response := await self.connection.async_get(self.cosem_attribute):
-            if self.entity_description.key == "self_test" and (
-                response := async_extract_error_codes(response)
-            ):
-                self._attr_extra_state_attributes = {"error_codes": ", ".join(response)}
-
             self._attr_is_on = self.entity_description.value_fn(response)
+            if self.entity_description.key == "self_test" and self.is_on:
+                self._attr_extra_state_attributes = {
+                    "error_codes": ", ".join(async_extract_error_codes(response))
+                }
 
 
 async def async_setup_entry(
