@@ -44,7 +44,7 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         obis=cosem.Obis(0, 0, 97, 97, 0),
-        value_fn=lambda x: bool(int.from_bytes(x)),
+        value_fn=lambda x: any(byte for byte in x),
     ),
 )
 
