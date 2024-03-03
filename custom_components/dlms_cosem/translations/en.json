@@ -58,6 +58,9 @@
       "active_tariff": {
         "name": "Active tariff"
       },
+      "clock_synced": {
+        "name": "Clock synced"
+      },
       "current_l1": {
         "name": "Current L1"
       },
@@ -70,11 +73,17 @@
       "frequency": {
         "name": "Frequency"
       },
+      "front_cover_opened": {
+        "name": "Front cover opened"
+      },
       "internal_temperature": {
         "name": "Internal temperature"
       },
       "local_time": {
         "name": "Local time"
+      },
+      "magnetic_field_detected": {
+        "name": "Margnetic field detected"
       },
       "power_factor_l1": {
         "name": "Power factor L1"
@@ -87,6 +96,9 @@
       },
       "power_factor_total": {
         "name": "Power factor total"
+      },
+      "terminals_cover_opened": {
+        "name": "Terminals cover opened"
       },
       "voltage_l1": {
         "name": "Voltage L1"

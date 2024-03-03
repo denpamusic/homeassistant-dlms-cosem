@@ -37,8 +37,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"Timed out while connecting to {connection.entry.data[CONF_HOST]}"
         ) from e
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = connection
-
     async def _async_close_connection(event: Event | None = None) -> None:
         """Close DLMS connection on HA Stop."""
         await connection.async_close()
@@ -47,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_close_connection)
     )
 
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = connection
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     async_dispatcher_send(hass, SIGNAL_CONNECTED)
     return True

@@ -58,6 +58,9 @@
       "active_tariff": {
         "name": "Текущий тариф"
       },
+      "clock_synced": {
+        "name": "Установка времени"
+      },
       "current_l1": {
         "name": "Сила тока L1"
       },
@@ -70,11 +73,17 @@
       "frequency": {
         "name": "Частота"
       },
+      "front_cover_opened": {
+        "name": "Вскрытие копуса"
+      },
       "internal_temperature": {
         "name": "Температура в корпусе"
       },
       "local_time": {
         "name": "Локальное время"
+      },
+      "magnetic_field_detected": {
+        "name": "Обнаружение магнитного поля"
       },
       "power_factor_l1": {
         "name": "Коэффициент мощности L1"
@@ -87,6 +96,9 @@
       },
       "power_factor_total": {
         "name": "Коэффициент мощности (полный)"
+      },
+      "terminals_cover_opened": {
+        "name": "Вскрытие клемной колодки"
       },
       "voltage_l1": {
         "name": "Напряжение L1"
