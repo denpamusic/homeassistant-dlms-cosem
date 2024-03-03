@@ -58,6 +58,18 @@
       "active_tariff": {
         "name": "Active tariff"
       },
+      "apparent_power_l1": {
+        "name": "Apparent power L1"
+      },
+      "apparent_power_l2": {
+        "name": "Apparent power L2"
+      },
+      "apparent_power_l3": {
+        "name": "Apparent power L3"
+      },
+      "apparent_power_total": {
+        "name": "Apparent power total"
+      },
       "clock_synced": {
         "name": "Clock synced"
       },

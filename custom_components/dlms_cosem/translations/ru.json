@@ -58,6 +58,18 @@
       "active_tariff": {
         "name": "Текущий тариф"
       },
+      "apparent_power_l1": {
+        "name": "Полная мощность L1"
+      },
+      "apparent_power_l2": {
+        "name": "Полная мощность  L2"
+      },
+      "apparent_power_l3": {
+        "name": "Полная мощность L3"
+      },
+      "apparent_power_total": {
+        "name": "Полная мощность"
+      },
       "clock_synced": {
         "name": "Установка времени"
       },
