@@ -112,6 +112,9 @@
       "terminals_cover_opened": {
         "name": "Вскрытие клемной колодки"
       },
+      "uptime": {
+        "name": "Время работы"
+      },
       "voltage_l1": {
         "name": "Напряжение L1"
       },

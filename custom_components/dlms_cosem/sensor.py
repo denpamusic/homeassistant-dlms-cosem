@@ -22,6 +22,7 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
@@ -277,6 +278,18 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         obis=cosem.Obis(0, 0, 96, 9, 0),
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda x: x,
+    ),
+    CosemSensorEntityDescription(
+        key="uptime",
+        translation_key="uptime",
+        device_class=SensorDeviceClass.DURATION,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        entity_registry_enabled_default=False,
+        obis=cosem.Obis(0, 0, 96, 8, 0),
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
         value_fn=lambda x: x,

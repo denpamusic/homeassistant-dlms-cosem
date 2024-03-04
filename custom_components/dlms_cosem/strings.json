@@ -112,6 +112,9 @@
       "terminals_cover_opened": {
         "name": "Terminals cover opened"
       },
+      "uptime": {
+        "name": "Meter uptime"
+      },
       "voltage_l1": {
         "name": "Voltage L1"
       },
