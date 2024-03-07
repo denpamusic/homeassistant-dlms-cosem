@@ -139,7 +139,7 @@ def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str
 
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the logical device name."""
-    data = cast(bytes, await _async_get_attribute(hass, client, LOGICAL_DEVICE_NAME))
+    data: bytes = await _async_get_attribute(hass, client, LOGICAL_DEVICE_NAME)
     return data.decode(encoding="utf-8")
 
 
