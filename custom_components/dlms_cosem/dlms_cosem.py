@@ -78,12 +78,16 @@ structlog.configure(
 )
 
 
+@cache
+def async_get_lls_authentication(password: str) -> LowLevelSecurityAuthentication:
+    """Get the Low Level Security authentication."""
+    return LowLevelSecurityAuthentication(secret=bytes(password, encoding="utf-8"))
+
+
 def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
     """Get the DLMS client."""
     return DlmsClient(
-        authentication=LowLevelSecurityAuthentication(
-            secret=bytes(data[CONF_PASSWORD], encoding="utf-8")
-        ),
+        authentication=async_get_lls_authentication(data[CONF_PASSWORD]),
         transport=HdlcTransport(
             client_logical_address=LOGICAL_CLIENT_ADDRESS,
             server_logical_address=LOGICAL_SERVER_ADDRESS,
