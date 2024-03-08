@@ -38,3 +38,5 @@ jobs:
           commit-message: "[skip ci] Update flag ids."
           title: Update flag ids
           body: Automated FLAG ID database update from https://www.dlms.com/flag-id-directory/ by DLMS UA.
+          add-paths: |
+            custom_components/dlms_cosem/dlms_flagids.json
