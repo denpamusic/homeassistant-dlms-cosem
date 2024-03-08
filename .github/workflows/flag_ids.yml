@@ -35,6 +35,6 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           branch: db_update
-          commit-message: Update flag ids.
+          commit-message: "[skip ci] Update flag ids."
           title: Update flag ids
           body: Automated FLAG ID database update from https://www.dlms.com/flag-id-directory/ by DLMS UA.
