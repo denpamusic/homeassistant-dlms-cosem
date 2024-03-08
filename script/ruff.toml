@@ -1,0 +1,6 @@
+# This extend our general Ruff rules specifically for script
+extend = "../pyproject.toml"
+
+ignore = [
+    "T201",  # 'print' found
+]
