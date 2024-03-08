@@ -35,7 +35,6 @@ from .const import (
     SIGNAL_CONNECTED,
 )
 
-DLMS_FLAG_IDS_FILE: Final = "dlms_flagids.json"
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 RECONNECT_INTERVAL: Final = timedelta(seconds=3)
@@ -102,7 +101,7 @@ def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
 @cache
 async def async_decode_flag_id(flag_id: str) -> str:
     """Decode the flag id."""
-    dlms_flag_ids_file = Path(__file__).with_name(DLMS_FLAG_IDS_FILE)
+    dlms_flag_ids_file = Path(__file__).with_name("dlms_flagids.json")
 
     async with aiofiles.open(dlms_flag_ids_file, mode="rb") as f:
         async for key, value in ijson.kvitems_async(f, ""):
