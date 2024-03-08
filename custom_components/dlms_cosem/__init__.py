@@ -31,11 +31,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     try:
         await connection.async_connect()
-    except CommunicationError as e:
+    except CommunicationError as err:
         await connection.async_close()
         raise ConfigEntryNotReady(
             f"Timed out while connecting to {connection.entry.data[CONF_HOST]}"
-        ) from e
+        ) from err
 
     async def _async_close_connection(event: Event | None = None) -> None:
         """Close DLMS connection on HA Stop."""
