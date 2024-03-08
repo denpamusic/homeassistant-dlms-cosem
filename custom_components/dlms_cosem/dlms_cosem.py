@@ -37,6 +37,7 @@ from .const import (
 
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
+
 RECONNECT_INTERVAL: Final = timedelta(seconds=3)
 
 TIMEOUT: Final = 5
@@ -44,30 +45,6 @@ TIMEOUT: Final = 5
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
 }
-
-LOGICAL_DEVICE_NAME = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 42, 0, 0),
-    attribute=DEFAULT_ATTRIBUTE,
-)
-
-SOFTWARE_PACKAGE = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 96, 1, 2),
-    attribute=DEFAULT_ATTRIBUTE,
-)
-
-EQUIPMENT_ID = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 96, 1, 0),
-    attribute=DEFAULT_ATTRIBUTE,
-)
-
-A_XDR_DECODER = a_xdr.AXdrDecoder(
-    encoding_conf=a_xdr.EncodingConf(
-        attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
-    )
-)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -140,15 +117,36 @@ def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str
     ]
 
 
+LOGICAL_DEVICE_NAME = cosem.CosemAttribute(
+    interface=enumerations.CosemInterface.DATA,
+    instance=cosem.Obis(0, 0, 42, 0, 0),
+    attribute=DEFAULT_ATTRIBUTE,
+)
+
+
 async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the logical device name."""
     data: bytes = await _async_get_attribute(hass, client, LOGICAL_DEVICE_NAME)
     return data.decode(encoding="utf-8")
 
 
+SOFTWARE_PACKAGE = cosem.CosemAttribute(
+    interface=enumerations.CosemInterface.DATA,
+    instance=cosem.Obis(0, 0, 96, 1, 2),
+    attribute=DEFAULT_ATTRIBUTE,
+)
+
+
 async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
     """Get the software version."""
     return cast(str, await _async_get_attribute(hass, client, SOFTWARE_PACKAGE))
+
+
+EQUIPMENT_ID = cosem.CosemAttribute(
+    interface=enumerations.CosemInterface.DATA,
+    instance=cosem.Obis(0, 0, 96, 1, 0),
+    attribute=DEFAULT_ATTRIBUTE,
+)
 
 
 async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str:
@@ -178,6 +176,13 @@ async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
                 func()
 
     await hass.async_add_executor_job(_disconnect)
+
+
+A_XDR_DECODER = a_xdr.AXdrDecoder(
+    encoding_conf=a_xdr.EncodingConf(
+        attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
+    )
+)
 
 
 async def _async_get_attribute(

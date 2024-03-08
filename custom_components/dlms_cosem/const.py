@@ -20,6 +20,7 @@ DEFAULT_PORT: Final = 23
 DEFAULT_PASSWORD: Final = "111111"
 DEFAULT_MODEL: Final = "Smart meter"
 DEFAULT_ATTRIBUTE: Final = 2
+DEFAULT_SCAN_INTERVAL: Final = 15
 
 # Dispatcher signals
 SIGNAL_CONNECTED: Final = "connected"

@@ -19,11 +19,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import Throttle
 
 from . import CosemEntity, CosemEntityDescription
-from .const import DOMAIN
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .dlms_cosem import DlmsConnection, async_extract_error_codes
 
-SCAN_INTERVAL = timedelta(seconds=15)
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
+SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
+
 PARALLEL_UPDATES = 0
 
 
@@ -63,7 +63,7 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
         self.connection = connection
         self.entity_description = description
 
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
+    @Throttle(SCAN_INTERVAL)
     async def async_update(self) -> None:
         """Update entity state."""
         if response := await self.connection.async_get(self.cosem_attribute):
