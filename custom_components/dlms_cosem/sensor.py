@@ -27,7 +27,6 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import Throttle
 
 from . import CosemEntity, CosemEntityDescription, dlms_datetime_to_ha_datetime
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
@@ -362,7 +361,6 @@ class CosemSensor(CosemEntity, SensorEntity):
         self.connection = connection
         self.entity_description = description
 
-    @Throttle(SCAN_INTERVAL)
     async def async_update(self) -> None:
         """Update entity state."""
         if response := await self.connection.async_get(self.cosem_attribute):
