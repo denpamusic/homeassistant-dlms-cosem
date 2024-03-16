@@ -66,10 +66,12 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
         """Update entity state."""
         if response := await self.connection.async_get(self.cosem_attribute):
             self._attr_is_on = self.entity_description.value_fn(response)
-            if self.entity_description.key == "self_test" and self.is_on:
-                self._attr_extra_state_attributes = {
-                    "error_codes": ", ".join(async_extract_error_codes(response))
-                }
+            if self.entity_description.key == "self_test":
+                self._attr_extra_state_attributes = (
+                    {"error_codes": ", ".join(async_extract_error_codes(response))}
+                    if self.is_on
+                    else {}
+                )
 
 
 async def async_setup_entry(
