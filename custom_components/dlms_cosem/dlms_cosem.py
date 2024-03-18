@@ -224,7 +224,6 @@ class DlmsConnection:
     connected: bool
     entry: ConfigEntry
     hass: HomeAssistant
-    reconnect_attempt: int
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize a new DLMS/COSEM connection."""
@@ -233,33 +232,24 @@ class DlmsConnection:
         self.connected = False
         self.entry = entry
         self.hass = hass
-        self.reconnect_attempt = -1
 
     async def async_connect(self) -> None:
         """Connect to the DLMS server."""
         if not self.connected:
             self.client = async_get_dlms_client(self.entry.data)
             await _async_connect(self.hass, self.client)
-            self.reconnect_attempt = 0
             self.connected = True
 
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
         try:
-            self.reconnect_attempt += 1
-            await self._async_disconnect()
+            await self.async_close()
             await self.async_connect()
         except Exception as err:
             _async_log_connection_error(err)
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         else:
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, True)
-
-    async def _async_disconnect(self) -> None:
-        """Disassociate and disconnect the client."""
-        if self.client:
-            await _async_disconnect(self.hass, self.client)
-            self.client = None
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the attribute or initiate reconnect on failure."""
@@ -278,11 +268,11 @@ class DlmsConnection:
 
     async def async_close(self) -> None:
         """Close the connection."""
-        with suppress(TimeoutError):
-            await self._async_disconnect()
+        if self.client:
+            await _async_disconnect(self.hass, self.client)
+            self.client = None
 
         self.connected = False
-        self.reconnect_attempt = -1
 
     @cached_property
     def manufacturer(self) -> str:
