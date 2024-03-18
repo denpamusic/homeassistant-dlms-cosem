@@ -243,9 +243,9 @@ class DlmsConnection:
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
         try:
-            await self.async_close()
             await self.async_connect()
         except Exception as err:
+            await self.async_close()
             _async_log_connection_error(err)
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         else:
@@ -259,7 +259,7 @@ class DlmsConnection:
                 return await _async_get_attribute(self.hass, self.client, attribute)
 
         except Exception as err:
-            self.connected = False
+            await self.async_close()
             _async_log_connection_error(err)
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
@@ -268,11 +268,10 @@ class DlmsConnection:
 
     async def async_close(self) -> None:
         """Close the connection."""
+        self.connected = False
         if self.client:
             await _async_disconnect(self.hass, self.client)
             self.client = None
-
-        self.connected = False
 
     @cached_property
     def manufacturer(self) -> str:
