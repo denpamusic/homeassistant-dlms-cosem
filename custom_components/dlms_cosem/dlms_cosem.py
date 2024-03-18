@@ -17,7 +17,7 @@ from dlms_cosem.io import BlockingTcpIO, HdlcTransport
 from dlms_cosem.security import LowLevelSecurityAuthentication
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_call_later
 import ijson
@@ -32,6 +32,7 @@ from .const import (
     CONF_PORT,
     DEFAULT_ATTRIBUTE,
     DEFAULT_MODEL,
+    DOMAIN,
     SIGNAL_AVAILABLE,
 )
 
@@ -163,7 +164,7 @@ async def _async_connect(hass: HomeAssistant, client: DlmsClient) -> None:
         client.connect()
         client.associate()
 
-    await hass.async_add_executor_job(_connect)
+    await hass.async_add_executor_job(hass, _connect)
 
 
 async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
@@ -176,7 +177,7 @@ async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
                 # Ignore any exceptions on disconnect.
                 func()
 
-    await hass.async_add_executor_job(_disconnect)
+    await hass.async_add_executor_job(hass, _disconnect)
 
 
 A_XDR_DECODER = a_xdr.AXdrDecoder(
@@ -196,7 +197,23 @@ async def _async_get_attribute(
         response = client.get(attribute)
         return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
-    return await hass.async_add_executor_job(_get_attibute)
+    task = hass.async_add_executor_job(_get_attibute)
+
+    try:
+        async with hass.timeout.async_timeout(TIMEOUT, DOMAIN):
+            return await task
+    except TimeoutError:
+        task.cancel()
+        raise
+
+
+@callback
+def _async_log_connection_error(err: Exception):
+    """Log connection error."""
+    if isinstance(err, TimeoutError):
+        _LOGGER.warning("Connection timed out, retrying in the background")
+    else:
+        _LOGGER.warning("Connection lost, retrying in the background: %s", err)
 
 
 class DlmsConnection:
@@ -233,9 +250,7 @@ class DlmsConnection:
             await self._async_disconnect()
             await self.async_connect()
         except Exception as err:
-            _LOGGER.warning(
-                "Re-connect attempt failed, retrying in the background: %s", err
-            )
+            _async_log_connection_error(err)
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         else:
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, True)
@@ -250,19 +265,12 @@ class DlmsConnection:
         """Get the attribute or initiate reconnect on failure."""
         await self._update_semaphore.acquire()
         try:
-            async with asyncio.timeout(TIMEOUT):
-                return (
-                    await _async_get_attribute(self.hass, self.client, attribute)
-                    if self.connected
-                    else None
-                )
-        except Exception as err:
-            if isinstance(err, TimeoutError):
-                _LOGGER.warning("Connection timed out, retrying in the background")
-            else:
-                _LOGGER.warning("Connection lost, retrying in the background: %s", err)
+            if self.connected:
+                return await _async_get_attribute(self.hass, self.client, attribute)
 
+        except Exception as err:
             self.connected = False
+            _async_log_connection_error(err)
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         finally:
@@ -270,7 +278,9 @@ class DlmsConnection:
 
     async def async_close(self) -> None:
         """Close the connection."""
-        await self._async_disconnect()
+        with suppress(TimeoutError):
+            await self._async_disconnect()
+
         self.connected = False
         self.reconnect_attempt = -1
 
