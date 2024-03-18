@@ -106,6 +106,7 @@ async def async_decode_logical_device_name(logical_device_name: str) -> tuple[st
     )
 
 
+@callback
 def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str]:
     """Extract the error code list from bytes."""
     error_length = len(error_code) * 8
