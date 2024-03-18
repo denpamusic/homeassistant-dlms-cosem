@@ -11,10 +11,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.dispatcher import (
-    async_dispatcher_connect,
-    async_dispatcher_send,
-)
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, Entity, EntityDescription
 
 from .const import CONF_HOST, DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_AVAILABLE
@@ -45,7 +42,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = connection
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    async_dispatcher_send(hass, SIGNAL_AVAILABLE, True)
     return True
 
 
