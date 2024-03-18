@@ -164,7 +164,7 @@ async def _async_connect(hass: HomeAssistant, client: DlmsClient) -> None:
         client.connect()
         client.associate()
 
-    await hass.async_add_executor_job(hass, _connect)
+    await hass.async_add_executor_job(_connect)
 
 
 async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
@@ -177,7 +177,7 @@ async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
                 # Ignore any exceptions on disconnect.
                 func()
 
-    await hass.async_add_executor_job(hass, _disconnect)
+    await hass.async_add_executor_job(_disconnect)
 
 
 A_XDR_DECODER = a_xdr.AXdrDecoder(
