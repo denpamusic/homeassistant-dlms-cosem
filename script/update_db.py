@@ -51,5 +51,5 @@ for flag_id, override in OVERRIDES.items():
         print(f'Replaced "{manufacturer}" with "{override}"')
 
 Path("custom_components/dlms_cosem/dlms_flagids.json").write_text(
-    json.dumps(manufacturers, indent=2)
+    json.dumps(manufacturers, indent=2) + "\n"
 )
