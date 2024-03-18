@@ -23,4 +23,4 @@ DEFAULT_ATTRIBUTE: Final = 2
 DEFAULT_SCAN_INTERVAL: Final = 15
 
 # Dispatcher signals
-SIGNAL_CONNECTED: Final = "connected"
+SIGNAL_AVAILABLE: Final = "available"

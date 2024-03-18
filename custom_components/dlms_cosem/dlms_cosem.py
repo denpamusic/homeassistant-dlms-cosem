@@ -32,7 +32,7 @@ from .const import (
     CONF_PORT,
     DEFAULT_ATTRIBUTE,
     DEFAULT_MODEL,
-    SIGNAL_CONNECTED,
+    SIGNAL_AVAILABLE,
 )
 
 LOGICAL_CLIENT_ADDRESS: Final = 32
@@ -237,7 +237,7 @@ class DlmsConnection:
             )
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         else:
-            async_dispatcher_send(self.hass, SIGNAL_CONNECTED)
+            async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, True)
 
     async def _async_disconnect(self) -> None:
         """Disassociate and disconnect the client."""
@@ -262,6 +262,7 @@ class DlmsConnection:
                 _LOGGER.warning("Connection lost, retrying in the background: %s", err)
 
             self.connected = False
+            async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
             async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
         finally:
             self._update_semaphore.release()

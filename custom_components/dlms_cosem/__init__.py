@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 from functools import cached_property
-from typing import Final, cast
+from typing import cast
 
 from dlms_cosem import cosem, enumerations
 from dlms_cosem.exceptions import CommunicationError
@@ -17,12 +17,10 @@ from homeassistant.helpers.dispatcher import (
 )
 from homeassistant.helpers.entity import DeviceInfo, Entity, EntityDescription
 
-from .const import CONF_HOST, DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_CONNECTED
+from .const import CONF_HOST, DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_AVAILABLE
 from .dlms_cosem import DlmsConnection
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
-
-RETRIES_UNTIL_UNAVAILABLE: Final = 3
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -47,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = connection
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    async_dispatcher_send(hass, SIGNAL_CONNECTED)
+    async_dispatcher_send(hass, SIGNAL_AVAILABLE, True)
     return True
 
 
@@ -94,22 +92,15 @@ class CosemEntity(Entity):
         await super().async_added_to_hass()
         self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, SIGNAL_CONNECTED, self._connect_callback
+                self.hass, SIGNAL_AVAILABLE, self._available_callback
             )
         )
 
     @callback
-    def _connect_callback(self) -> None:
-        """Schedule an update after connection."""
-        self.async_schedule_update_ha_state(force_refresh=True)
-
-    @property
-    def available(self) -> bool:
-        """If entity is available."""
-        if self.connection.reconnect_attempt >= 0:
-            return self.connection.reconnect_attempt <= RETRIES_UNTIL_UNAVAILABLE
-
-        return self.connection.connected
+    def _available_callback(self, available: bool) -> None:
+        """Mark entity as un/available and update ha state."""
+        self._attr_available = available
+        self.async_schedule_update_ha_state(force_refresh=True if available else False)
 
     @cached_property
     def unique_id(self) -> str:
