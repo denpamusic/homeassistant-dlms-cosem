@@ -168,7 +168,13 @@ async def _async_connect(hass: HomeAssistant, client: DlmsClient) -> None:
 
 
 async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
-    """Add an executor job to close the connection."""
+    """Add an executor job to close the connection.
+
+    Separate IO disconnect is needed because when _async_disconnect() is
+    called while client timeouts during get request, client state
+    becomes corrupted and client cannot recover and do RLRQ or
+    graceful disconnect.
+    """
 
     def _disconnect() -> None:
         """Close the connection."""
