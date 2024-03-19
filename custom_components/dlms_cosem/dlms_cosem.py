@@ -172,7 +172,11 @@ async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
 
     def _disconnect() -> None:
         """Close the connection."""
-        for func in (client.release_association, client.disconnect):
+        for func in (
+            client.release_association,
+            client.disconnect,
+            client.transport.io.disconnect,
+        ):
             with suppress(Exception):
                 # Ignore any exceptions on disconnect.
                 func()
@@ -197,14 +201,8 @@ async def _async_get_attribute(
         response = client.get(attribute)
         return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
-    task = hass.async_add_executor_job(_get_attibute)
-
-    try:
-        async with hass.timeout.async_timeout(TIMEOUT, DOMAIN):
-            return await task
-    except TimeoutError:
-        task.cancel()
-        raise
+    async with hass.timeout.async_timeout(TIMEOUT, DOMAIN):
+        return await hass.async_add_executor_job(_get_attibute)
 
 
 @callback
