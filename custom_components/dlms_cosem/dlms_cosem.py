@@ -229,7 +229,7 @@ class DlmsConnection:
             await _async_connect(self.hass, self.client)
 
     async def _connection_error(self, err: Exception) -> None:
-        """Log error and schedule a re-connect attempt."""
+        """Log error and schedule a reconnect attempt."""
         if isinstance(err, TimeoutError):
             _LOGGER.warning("Connection timed out, retrying in the background")
         else:
