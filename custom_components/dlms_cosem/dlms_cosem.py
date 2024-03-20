@@ -207,15 +207,6 @@ async def _async_get_attribute(
         return await hass.async_add_executor_job(_get_attibute)
 
 
-@callback
-def _async_log_connection_error(err: Exception):
-    """Log connection error."""
-    if isinstance(err, TimeoutError):
-        _LOGGER.warning("Connection timed out, retrying in the background")
-    else:
-        _LOGGER.warning("Connection lost, retrying in the background: %s", err)
-
-
 class DlmsConnection:
     """Represents DLMS connection."""
 
@@ -240,14 +231,22 @@ class DlmsConnection:
             await _async_connect(self.hass, self.client)
             self.connected = True
 
+    async def _connection_error(self, err: Exception) -> None:
+        """Log error and schedule a re-connect attempt."""
+        if isinstance(err, TimeoutError):
+            _LOGGER.warning("Connection timed out, retrying in the background")
+        else:
+            _LOGGER.warning("Connection lost, retrying in the background: %s", err)
+
+        await self.async_close()
+        async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
+
     async def _reconnect(self, event_time: datetime) -> None:
         """Try to reconnect on connection failure."""
         try:
             await self.async_connect()
         except Exception as err:
-            await self.async_close()
-            _async_log_connection_error(err)
-            async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
+            await self._connection_error(err)
         else:
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, True)
 
@@ -259,10 +258,8 @@ class DlmsConnection:
                 return await _async_get_attribute(self.hass, self.client, attribute)
 
         except Exception as err:
-            await self.async_close()
-            _async_log_connection_error(err)
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
-            async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
+            await self._connection_error(err)
         finally:
             self._update_semaphore.release()
 
