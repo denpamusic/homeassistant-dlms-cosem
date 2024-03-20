@@ -212,7 +212,6 @@ class DlmsConnection:
 
     _update_semaphore: asyncio.Semaphore
     client: DlmsClient | None
-    connected: bool
     entry: ConfigEntry
     hass: HomeAssistant
 
@@ -220,16 +219,14 @@ class DlmsConnection:
         """Initialize a new DLMS/COSEM connection."""
         self._update_semaphore = asyncio.Semaphore(1)
         self.client = None
-        self.connected = False
         self.entry = entry
         self.hass = hass
 
     async def async_connect(self) -> None:
         """Connect to the DLMS server."""
-        if not self.connected:
+        if not self.client:
             self.client = async_get_dlms_client(self.entry.data)
             await _async_connect(self.hass, self.client)
-            self.connected = True
 
     async def _connection_error(self, err: Exception) -> None:
         """Log error and schedule a re-connect attempt."""
@@ -254,9 +251,8 @@ class DlmsConnection:
         """Get the attribute or initiate reconnect on failure."""
         await self._update_semaphore.acquire()
         try:
-            if self.connected:
+            if self.client:
                 return await _async_get_attribute(self.hass, self.client, attribute)
-
         except Exception as err:
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
             await self._connection_error(err)
@@ -265,7 +261,6 @@ class DlmsConnection:
 
     async def async_close(self) -> None:
         """Close the connection."""
-        self.connected = False
         if self.client:
             await _async_disconnect(self.hass, self.client)
             self.client = None
