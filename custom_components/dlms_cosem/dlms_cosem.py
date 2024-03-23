@@ -11,10 +11,13 @@ from pathlib import Path
 from typing import Any, Final, cast
 
 import aiofiles
-from dlms_cosem import a_xdr, cosem, enumerations
-from dlms_cosem.client import DlmsClient
-from dlms_cosem.io import BlockingTcpIO, HdlcTransport
-from dlms_cosem.security import LowLevelSecurityAuthentication
+from dlms_cosem import a_xdr, cosem
+from dlms_cosem.client import DlmsClient as BlockingDlmsClient
+from dlms_cosem.io import BlockingTcpIO, HdlcTransport, IoImplementation
+from dlms_cosem.security import (
+    AuthenticationMethodManager,
+    LowLevelSecurityAuthentication,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant, callback
@@ -30,7 +33,6 @@ from .const import (
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
-    DEFAULT_ATTRIBUTE,
     DEFAULT_MODEL,
     DOMAIN,
     SIGNAL_AVAILABLE,
@@ -47,29 +49,18 @@ LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
 }
 
+A_XDR_DECODER = a_xdr.AXdrDecoder(
+    encoding_conf=a_xdr.EncodingConf(
+        attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
+    )
+)
+
 _LOGGER = logging.getLogger(__name__)
 
 # Setup structlog for the dlms-cosem package.
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING)
 )
-
-
-def async_get_dlms_client(data: MutableMapping[str, Any]) -> DlmsClient:
-    """Get the DLMS client."""
-    return DlmsClient(
-        authentication=LowLevelSecurityAuthentication(
-            secret=bytes(data[CONF_PASSWORD], encoding="utf-8")
-        ),
-        transport=HdlcTransport(
-            client_logical_address=LOGICAL_CLIENT_ADDRESS,
-            server_logical_address=LOGICAL_SERVER_ADDRESS,
-            server_physical_address=data[CONF_PHYSICAL_ADDRESS],
-            io=BlockingTcpIO(
-                host=data[CONF_HOST], port=data[CONF_PORT], timeout=TIMEOUT
-            ),
-        ),
-    )
 
 
 @cache
@@ -115,118 +106,139 @@ def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str
     ]
 
 
-LOGICAL_DEVICE_NAME = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 42, 0, 0),
-    attribute=DEFAULT_ATTRIBUTE,
-)
+class DlmsClient:
+    """Represents a DLMS client."""
 
+    _host: str
+    _password: bytes
+    _physical_address: int
+    _port: str
+    _timeout: int = TIMEOUT
+    client: BlockingDlmsClient | None
+    hass: HomeAssistant
 
-async def async_get_logical_device_name(hass: HomeAssistant, client: DlmsClient) -> str:
-    """Get the logical device name."""
-    data: bytes = await _async_get_attribute(hass, client, LOGICAL_DEVICE_NAME)
-    return data.decode(encoding="utf-8")
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        host: str,
+        password: str,
+        physical_address: int,
+        port: int,
+    ) -> None:
+        """Initialize a new async DLMS client."""
+        self.client = None
+        self.hass = hass
+        self._host = host
+        self._password = bytes(password, encoding="utf-8")
+        self._physical_address = physical_address
+        self._port = port
 
+    async def async_connect(self) -> None:
+        """Add an executor job to initiate the connection."""
 
-SOFTWARE_PACKAGE = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 96, 1, 2),
-    attribute=DEFAULT_ATTRIBUTE,
-)
+        def _connect_and_associate() -> None:
+            """Initiate connection and perform association."""
+            self.client.connect()
+            self.client.associate()
 
+        if not self.client:
+            self.client = BlockingDlmsClient(
+                transport=HdlcTransport(
+                    client_logical_address=LOGICAL_CLIENT_ADDRESS,
+                    server_logical_address=LOGICAL_SERVER_ADDRESS,
+                    server_physical_address=self._physical_address,
+                    io=self.io,
+                ),
+                authentication=self.authentication,
+            )
+            await self.hass.async_add_executor_job(_connect_and_associate)
 
-async def async_get_sw_version(hass: HomeAssistant, client: DlmsClient) -> str:
-    """Get the software version."""
-    return cast(str, await _async_get_attribute(hass, client, SOFTWARE_PACKAGE))
+    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
+        """Add an executor job to get the COSEM attribute and decode it."""
 
+        def _get_attibute() -> Any:
+            """Get the COSEM attribute and decode it."""
+            response = self.client.get(attribute)
+            return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
-EQUIPMENT_ID = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 96, 1, 0),
-    attribute=DEFAULT_ATTRIBUTE,
-)
+        if not self.client:
+            return None
 
+        async with self.hass.timeout.async_timeout(TIMEOUT, DOMAIN):
+            return await self.hass.async_add_executor_job(_get_attibute)
 
-async def async_get_equipment_id(hass: HomeAssistant, client: DlmsClient) -> str:
-    """Get the equipment identifier."""
-    return cast(str, await _async_get_attribute(hass, client, EQUIPMENT_ID))
+    async def async_disconnect(self) -> None:
+        """Add an executor job to close the connection.
 
+        Separate IO disconnect is needed here because when
+        _async_disconnect() is called while client timeouts during get
+        request, client state becomes corrupted and client cannot
+        recover and do RLRQ or graceful disconnect.
+        """
 
-async def _async_connect(hass: HomeAssistant, client: DlmsClient) -> None:
-    """Add an executor job to initiate the connection."""
+        def _disconnect() -> None:
+            """Close the connection."""
+            for func in (
+                self.client.release_association,
+                self.client.disconnect,
+                self.client.transport.io.disconnect,
+            ):
+                with suppress(Exception):
+                    # Ignore any exceptions on disconnect.
+                    func()
 
-    def _connect() -> None:
-        """Initiate the connection."""
-        client.connect()
-        client.associate()
+        if self.client:
+            await self.hass.async_add_executor_job(_disconnect)
+            self.client = None
 
-    await hass.async_add_executor_job(_connect)
+    @cached_property
+    def io(self) -> IoImplementation:
+        """Return the IO implementation."""
+        return BlockingTcpIO(host=self._host, port=self._port, timeout=self._timeout)
 
-
-async def _async_disconnect(hass: HomeAssistant, client: DlmsClient) -> None:
-    """Add an executor job to close the connection.
-
-    Separate IO disconnect is needed because when _async_disconnect() is
-    called while client timeouts during get request, client state
-    becomes corrupted and client cannot recover and do RLRQ or
-    graceful disconnect.
-    """
-
-    def _disconnect() -> None:
-        """Close the connection."""
-        for func in (
-            client.release_association,
-            client.disconnect,
-            client.transport.io.disconnect,
-        ):
-            with suppress(Exception):
-                # Ignore any exceptions on disconnect.
-                func()
-
-    await hass.async_add_executor_job(_disconnect)
-
-
-A_XDR_DECODER = a_xdr.AXdrDecoder(
-    encoding_conf=a_xdr.EncodingConf(
-        attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
-    )
-)
-
-
-async def _async_get_attribute(
-    hass: HomeAssistant, client: DlmsClient, attribute: cosem.CosemAttribute
-) -> Any:
-    """Add an executor job to get the COSEM attribute and decode it."""
-
-    def _get_attibute() -> Any:
-        """Get the COSEM attribute and decode it."""
-        response = client.get(attribute)
-        return A_XDR_DECODER.decode(response)[ATTR_DATA]
-
-    async with hass.timeout.async_timeout(TIMEOUT, DOMAIN):
-        return await hass.async_add_executor_job(_get_attibute)
+    @cached_property
+    def authentication(self) -> AuthenticationMethodManager:
+        """Return the authentication method manager."""
+        return LowLevelSecurityAuthentication(secret=self._password)
 
 
 class DlmsConnection:
     """Represents DLMS connection."""
 
     _update_semaphore: asyncio.Semaphore
-    client: DlmsClient | None
+    client: DlmsClient
     entry: ConfigEntry
     hass: HomeAssistant
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize a new DLMS/COSEM connection."""
         self._update_semaphore = asyncio.Semaphore(1)
-        self.client = None
+        self.client = DlmsClient(
+            hass,
+            host=entry.data[CONF_HOST],
+            port=entry.data[CONF_PORT],
+            password=entry.data[CONF_PASSWORD],
+            physical_address=entry.data[CONF_PHYSICAL_ADDRESS],
+        )
         self.entry = entry
         self.hass = hass
 
     async def async_connect(self) -> None:
-        """Connect to the DLMS server."""
-        if not self.client:
-            self.client = async_get_dlms_client(self.entry.data)
-            await _async_connect(self.hass, self.client)
+        """Initialize the connection."""
+        await self.client.async_connect()
+
+    async def async_close(self) -> None:
+        """Close the connection."""
+        await self.client.async_disconnect()
+
+    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
+        """Get the attribute or initiate reconnect on failure."""
+        async with self._update_semaphore:
+            try:
+                return await self.client.async_get(attribute)
+            except Exception as err:
+                async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
+                await self._connection_error(err)
 
     async def _connection_error(self, err: Exception) -> None:
         """Log error and schedule a reconnect attempt."""
@@ -246,24 +258,6 @@ class DlmsConnection:
             await self._connection_error(err)
         else:
             async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, True)
-
-    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
-        """Get the attribute or initiate reconnect on failure."""
-        await self._update_semaphore.acquire()
-        try:
-            if self.client:
-                return await _async_get_attribute(self.hass, self.client, attribute)
-        except Exception as err:
-            async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
-            await self._connection_error(err)
-        finally:
-            self._update_semaphore.release()
-
-    async def async_close(self) -> None:
-        """Close the connection."""
-        if self.client:
-            await _async_disconnect(self.hass, self.client)
-            self.client = None
 
     @cached_property
     def manufacturer(self) -> str:
@@ -290,6 +284,12 @@ class DlmsConnection:
         cls, hass: HomeAssistant, data: MutableMapping[str, Any]
     ) -> DlmsClient:
         """Check DLMS meter connection."""
-        client = async_get_dlms_client(data)
-        await _async_connect(hass, client)
+        client = DlmsClient(
+            hass,
+            host=data[CONF_HOST],
+            port=data[CONF_PORT],
+            password=data[CONF_PASSWORD],
+            physical_address=data[CONF_PHYSICAL_ADDRESS],
+        )
+        await client.async_connect()
         return client

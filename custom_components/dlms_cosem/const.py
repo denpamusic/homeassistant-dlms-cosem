@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Final
 
+from dlms_cosem import cosem, enumerations
+
 DOMAIN: Final = "dlms_cosem"
 
 # Attributes
@@ -24,3 +26,22 @@ DEFAULT_SCAN_INTERVAL: Final = 15  # seconds
 
 # Dispatcher signals
 SIGNAL_AVAILABLE: Final = "available"
+
+# COSEM attributes
+COSEM_LOGICAL_DEVICE_NAME = cosem.CosemAttribute(
+    interface=enumerations.CosemInterface.DATA,
+    instance=cosem.Obis(0, 0, 42, 0, 0),
+    attribute=DEFAULT_ATTRIBUTE,
+)
+
+COSEM_SOFTWARE_PACKAGE = cosem.CosemAttribute(
+    interface=enumerations.CosemInterface.DATA,
+    instance=cosem.Obis(0, 0, 96, 1, 2),
+    attribute=DEFAULT_ATTRIBUTE,
+)
+
+COSEM_EQUIPMENT_ID = cosem.CosemAttribute(
+    interface=enumerations.CosemInterface.DATA,
+    instance=cosem.Obis(0, 0, 96, 1, 0),
+    attribute=DEFAULT_ATTRIBUTE,
+)

@@ -7,7 +7,6 @@ import logging
 from operator import itemgetter
 from typing import Any, Final
 
-from dlms_cosem.client import DlmsClient
 from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
 from homeassistant import config_entries
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
@@ -23,17 +22,14 @@ from .const import (
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
+    COSEM_EQUIPMENT_ID,
+    COSEM_LOGICAL_DEVICE_NAME,
+    COSEM_SOFTWARE_PACKAGE,
     DEFAULT_PASSWORD,
     DEFAULT_PORT,
     DOMAIN,
 )
-from .dlms_cosem import (
-    DlmsConnection,
-    async_decode_logical_device_name,
-    async_get_equipment_id,
-    async_get_logical_device_name,
-    async_get_sw_version,
-)
+from .dlms_cosem import DlmsClient, DlmsConnection, async_decode_logical_device_name
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -130,7 +126,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Finish the integration config."""
-        await self.hass.async_add_executor_job(self.client.disconnect)
+        await self.client.async_disconnect()
         manufacturer, model, equipment_id = DEVICE_INFO_GETTER(self.init_info)
         await self._async_set_unique_id(equipment_id)
 
@@ -152,11 +148,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
     async def _async_identify_device(self) -> None:
         """Identify the device."""
-        manufacturer, model = await async_decode_logical_device_name(
-            await async_get_logical_device_name(self.hass, self.client)
+        logical_device_name: bytes = await self.client.async_get(
+            COSEM_LOGICAL_DEVICE_NAME
         )
-        equipment_id = await async_get_equipment_id(self.hass, self.client)
-        sw_version = await async_get_sw_version(self.hass, self.client)
+        manufacturer, model = await async_decode_logical_device_name(
+            logical_device_name.decode(encoding="utf-8")
+        )
+        equipment_id = await self.client.async_get(COSEM_EQUIPMENT_ID)
+        sw_version = await self.client.async_get(COSEM_SOFTWARE_PACKAGE)
         self.init_info.update(
             {
                 ATTR_EQUIPMENT_ID: equipment_id,
