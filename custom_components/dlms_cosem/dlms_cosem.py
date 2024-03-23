@@ -124,14 +124,16 @@ class DlmsClient:
         password: str,
         physical_address: int,
         port: int,
+        timeout: int = TIMEOUT,
     ) -> None:
         """Initialize a new async DLMS client."""
-        self.client = None
-        self.hass = hass
         self._host = host
         self._password = bytes(password, encoding="utf-8")
         self._physical_address = physical_address
         self._port = port
+        self._timeout = timeout
+        self.client = None
+        self.hass = hass
 
     async def async_connect(self) -> None:
         """Add an executor job to initiate the connection."""
