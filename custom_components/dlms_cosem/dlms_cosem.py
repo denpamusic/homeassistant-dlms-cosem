@@ -137,12 +137,6 @@ class DlmsClient:
 
     async def async_connect(self) -> None:
         """Add an executor job to initiate the connection."""
-
-        def _connect_and_associate() -> None:
-            """Initiate connection and perform association."""
-            self.client.connect()
-            self.client.associate()
-
         if not self.client:
             self.client = BlockingDlmsClient(
                 transport=HdlcTransport(
@@ -153,21 +147,17 @@ class DlmsClient:
                 ),
                 authentication=self.authentication,
             )
-            await self.hass.async_add_executor_job(_connect_and_associate)
+            for job in (self.client.connect, self.client.associate):
+                await self.hass.async_add_executor_job(job)
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Add an executor job to get the COSEM attribute and decode it."""
-
-        def _get_attibute() -> Any:
-            """Get the COSEM attribute and decode it."""
-            response = self.client.get(attribute)
-            return A_XDR_DECODER.decode(response)[ATTR_DATA]
-
-        if not self.client:
-            return None
-
-        async with self.hass.timeout.async_timeout(TIMEOUT, DOMAIN):
-            return await self.hass.async_add_executor_job(_get_attibute)
+        if self.client:
+            async with self.hass.timeout.async_timeout(TIMEOUT, DOMAIN):
+                response = await self.hass.async_add_executor_job(
+                    self.client.get, attribute
+                )
+                return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
     async def async_disconnect(self) -> None:
         """Add an executor job to close the connection.
@@ -177,20 +167,15 @@ class DlmsClient:
         request, client state becomes corrupted and client cannot
         recover and do RLRQ or graceful disconnect.
         """
-
-        def _disconnect() -> None:
-            """Close the connection."""
-            for func in (
+        if self.client:
+            for job in (
                 self.client.release_association,
                 self.client.disconnect,
                 self.client.transport.io.disconnect,
             ):
                 with suppress(Exception):
-                    # Ignore any exceptions on disconnect.
-                    func()
+                    await self.hass.async_add_executor_job(job)
 
-        if self.client:
-            await self.hass.async_add_executor_job(_disconnect)
             self.client = None
 
     @cached_property
