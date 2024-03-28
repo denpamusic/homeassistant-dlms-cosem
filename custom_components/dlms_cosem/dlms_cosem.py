@@ -135,8 +135,13 @@ class DlmsClient:
         self.client = None
         self.hass = hass
 
+    def _get_attribute(self, attribute: cosem.CosemAttribute) -> Any:
+        """Get the COSEM attribute."""
+        response = self.client.get(attribute)
+        return A_XDR_DECODER.decode(response)[ATTR_DATA]
+
     async def async_connect(self) -> None:
-        """Add an executor job to initiate the connection."""
+        """Initiate the connection and associate the client."""
         if not self.client:
             self.client = BlockingDlmsClient(
                 transport=HdlcTransport(
@@ -151,22 +156,15 @@ class DlmsClient:
                 await self.hass.async_add_executor_job(job)
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
-        """Add an executor job to get the COSEM attribute and decode it."""
+        """Get the COSEM attribute and decode it."""
         if self.client:
             async with self.hass.timeout.async_timeout(TIMEOUT, DOMAIN):
-                response = await self.hass.async_add_executor_job(
-                    self.client.get, attribute
+                return await self.hass.async_add_executor_job(
+                    self._get_attribute, attribute
                 )
-                return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
     async def async_disconnect(self) -> None:
-        """Add an executor job to close the connection.
-
-        Separate IO disconnect is needed here because when
-        _async_disconnect() is called while client timeouts during get
-        request, client state becomes corrupted and client cannot
-        recover and do RLRQ or graceful disconnect.
-        """
+        """Close the connection."""
         if self.client:
             for job in (
                 self.client.release_association,
