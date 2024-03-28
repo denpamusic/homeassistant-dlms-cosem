@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import datetime as dt
 from functools import cached_property
-from typing import cast
 
 from dlms_cosem import cosem, enumerations
 from dlms_cosem.exceptions import CommunicationError
@@ -59,7 +58,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except KeyError:
             pass
 
-    return cast(bool, unload_ok)
+    return unload_ok
 
 
 def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
