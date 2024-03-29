@@ -75,18 +75,18 @@ async def async_decode_flag_id(flag_id: str) -> str:
 async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
     """Decode logical device name."""
     flag_id = logical_device_name[0:3]
-    model = DEFAULT_MODEL
 
     try:
         manufacturer = await async_decode_flag_id(flag_id)
     except KeyError:
-        return "unknown", model
+        manufacturer = "Unknown"
 
-    return manufacturer, (
-        LOGICAL_DEVICE_NAME_FORMATTER[flag_id](logical_device_name)
-        if flag_id in LOGICAL_DEVICE_NAME_FORMATTER
-        else model
-    )
+    if formatter := LOGICAL_DEVICE_NAME_FORMATTER.get(flag_id, None):
+        model = formatter(logical_device_name)
+    else:
+        model = DEFAULT_MODEL
+
+    return manufacturer, model
 
 
 @callback
