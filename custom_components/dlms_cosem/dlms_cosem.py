@@ -24,7 +24,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_call_later
 import ijson
-import structlog
 
 from .const import (
     ATTR_DATA,
@@ -56,11 +55,6 @@ A_XDR_DECODER = a_xdr.AXdrDecoder(
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-# Setup structlog for the dlms-cosem package.
-structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING)
-)
 
 
 @cache
