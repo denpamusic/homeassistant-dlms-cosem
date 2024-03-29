@@ -195,7 +195,7 @@ class DlmsConnection:
     entry: ConfigEntry
     hass: HomeAssistant
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize a new DLMS/COSEM connection."""
         self._update_semaphore = asyncio.Semaphore(1)
         self.client = DlmsClient(
@@ -227,12 +227,11 @@ class DlmsConnection:
 
     async def _connection_error(self, err: Exception) -> None:
         """Log error and schedule a reconnect attempt."""
-        if isinstance(err, TimeoutError):
-            _LOGGER.warning("Connection timed out, retrying in the background")
-        else:
-            _LOGGER.warning("Connection lost, retrying in the background: %s", err)
-
         await self.async_close()
+        _LOGGER.warning(
+            "Connection lost, retrying in the background: %s",
+            "connection timed out" if isinstance(err, TimeoutError) else err,
+        )
         async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
 
     async def _reconnect(self, event_time: datetime) -> None:
