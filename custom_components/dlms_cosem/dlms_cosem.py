@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
+import datetime as dt
 from datetime import datetime, timedelta
 from functools import cache, cached_property
 import logging
@@ -98,6 +99,17 @@ def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str
         for index in range(0, error_length - 1)
         if error_number & (1 << index)
     ]
+
+
+@callback
+def async_dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
+    """Convert timezone between DLMS and HA."""
+    utcoffset = dattim.utcoffset()
+    if utcoffset is None:
+        return dattim
+
+    local_tz = dt.timezone(offset=dt.timedelta(seconds=-utcoffset.total_seconds()))
+    return dattim.replace(tzinfo=local_tz)
 
 
 class DlmsClient:

@@ -28,9 +28,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CosemEntity, CosemEntityDescription, dlms_datetime_to_ha_datetime
+from . import CosemEntity, CosemEntityDescription
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
-from .dlms_cosem import DlmsConnection
+from .dlms_cosem import DlmsConnection, async_dlms_datetime_to_ha_datetime
 
 SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
 
@@ -301,7 +301,9 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         interface=enumerations.CosemInterface.CLOCK,
         obis=cosem.Obis(0, 0, 1, 0, 0),
-        value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
+        value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
+            time.datetime_from_bytes(x)[0]
+        ),
     ),
     CosemSensorEntityDescription(
         key="clock_synced",
@@ -311,7 +313,9 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         interface=enumerations.CosemInterface.DATA,
         obis=cosem.Obis(0, 0, 96, 2, 12),
-        value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
+        value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
+            time.datetime_from_bytes(x)[0]
+        ),
     ),
     CosemSensorEntityDescription(
         key="front_cover_opened",
@@ -322,7 +326,9 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         interface=enumerations.CosemInterface.DATA,
         icon="mdi:meter-electric-outline",
         obis=cosem.Obis(0, 0, 96, 20, 1),
-        value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
+        value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
+            time.datetime_from_bytes(x)[0]
+        ),
     ),
     CosemSensorEntityDescription(
         key="terminals_cover_opened",
@@ -333,7 +339,9 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         icon="mdi:screwdriver",
         interface=enumerations.CosemInterface.DATA,
         obis=cosem.Obis(0, 0, 96, 20, 6),
-        value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
+        value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
+            time.datetime_from_bytes(x)[0]
+        ),
     ),
     CosemSensorEntityDescription(
         key="magnetic_field_detected",
@@ -344,7 +352,9 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         icon="mdi:magnet-on",
         interface=enumerations.CosemInterface.DATA,
         obis=cosem.Obis(0, 0, 96, 20, 16),
-        value_fn=lambda x: dlms_datetime_to_ha_datetime(time.datetime_from_bytes(x)[0]),
+        value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
+            time.datetime_from_bytes(x)[0]
+        ),
     ),
 )
 

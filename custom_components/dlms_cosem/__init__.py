@@ -1,7 +1,6 @@
 """The DLMS integration."""
 from __future__ import annotations
 
-import datetime as dt
 from functools import cached_property
 import logging
 
@@ -81,16 +80,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             pass
 
     return unload_ok
-
-
-def dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
-    """Convert timezone between DLMS and HA."""
-    utcoffset = dattim.utcoffset()
-    if utcoffset is None:
-        return dattim
-
-    local_tz = dt.timezone(offset=dt.timedelta(seconds=-utcoffset.total_seconds()))
-    return dattim.replace(tzinfo=local_tz)
 
 
 class CosemEntityDescription(EntityDescription):
