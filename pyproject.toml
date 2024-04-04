@@ -176,7 +176,7 @@ fixture-parentheses = false
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
 known-first-party = [
-    "custom_components.plum_ecomax",
+    "custom_components.dlms_cosem",
 ]
 combine-as-imports = true
 split-on-trailing-comma = false
