@@ -13,7 +13,6 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigType
 from homeassistant.const import (
     UnitOfApparentPower,
     UnitOfElectricCurrent,
@@ -28,8 +27,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CosemEntity, CosemEntityDescription
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from . import CosemEntity, CosemEntityDescription, DlmsCosemConfigEntry
+from .const import DEFAULT_SCAN_INTERVAL
 from .dlms_cosem import DlmsConnection, async_dlms_datetime_to_ha_datetime
 
 SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
@@ -379,12 +378,12 @@ class CosemSensor(CosemEntity, SensorEntity):
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigType,
+    entry: DlmsCosemConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
     """Set up the sensor platform."""
-    connection: DlmsConnection = hass.data[DOMAIN][config_entry.entry_id]
+    data = entry.runtime_data
     async_add_entities(
-        CosemSensor(connection, description) for description in SENSOR_TYPES
+        CosemSensor(data.connection, description) for description in SENSOR_TYPES
     )
     return True

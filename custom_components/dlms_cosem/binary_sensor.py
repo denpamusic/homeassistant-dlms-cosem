@@ -12,13 +12,12 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.config_entries import ConfigType
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CosemEntity, CosemEntityDescription
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from . import CosemEntity, CosemEntityDescription, DlmsCosemConfigEntry
+from .const import DEFAULT_SCAN_INTERVAL
 from .dlms_cosem import DlmsConnection, async_extract_error_codes
 
 SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
@@ -76,13 +75,13 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigType,
+    entry: DlmsCosemConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
-    """Set up the sensor platform."""
-    connection: DlmsConnection = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up the binary sensor platform."""
+    data = entry.runtime_data
     async_add_entities(
-        CosemBinarySensor(connection, description)
+        CosemBinarySensor(data.connection, description)
         for description in BINARY_SENSOR_TYPES
     )
     return True

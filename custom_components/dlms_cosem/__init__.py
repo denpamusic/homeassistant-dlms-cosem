@@ -1,6 +1,7 @@
 """The DLMS integration."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import cached_property
 import logging
 
@@ -31,6 +32,8 @@ DEBUG_LOGGER = structlog.make_filtering_bound_logger(logging.DEBUG)
 
 _LOGGER = logging.getLogger(__name__)
 
+DlmsCosemConfigEntry = ConfigEntry["DlmsCosemData"]
+
 
 @callback
 def _async_logging_changed(event: Event | None = None) -> None:
@@ -39,7 +42,14 @@ def _async_logging_changed(event: Event | None = None) -> None:
     structlog.configure(wrapper_class=logger)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+@dataclass
+class DlmsCosemData:
+    """Represents DLMS/COSEM integration runtime data."""
+
+    connection: DlmsConnection
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) -> bool:
     """Set up DLMS connection from a config entry."""
     connection = DlmsConnection(hass, entry)
     structlog.configure(wrapper_class=DEFAULT_LOGGER)
@@ -62,6 +72,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_close_connection)
     )
+    entry.runtime_data = DlmsCosemData(connection)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = connection
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -69,15 +80,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        try:
-            connection: DlmsConnection = hass.data[DOMAIN][entry.entry_id]
-            await connection.async_close()
-            hass.data[DOMAIN].pop(entry.entry_id)
-        except KeyError:
-            pass
+        data = entry.runtime_data
+        await data.connection.async_close()
 
     return unload_ok
 
