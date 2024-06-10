@@ -6,7 +6,7 @@ from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 import datetime as dt
 from datetime import datetime, timedelta
-from functools import cache, cached_property
+from functools import cached_property
 import logging
 from pathlib import Path
 from typing import Any, Final, cast
@@ -58,7 +58,6 @@ A_XDR_DECODER = a_xdr.AXdrDecoder(
 _LOGGER = logging.getLogger(__name__)
 
 
-@cache
 async def async_decode_flag_id(flag_id: str) -> str:
     """Decode the flag id."""
     dlms_flag_ids_file = Path(__file__).with_name("dlms_flagids.json")
@@ -71,7 +70,6 @@ async def async_decode_flag_id(flag_id: str) -> str:
     raise KeyError
 
 
-@cache
 async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
     """Decode logical device name."""
     flag_id = logical_device_name[0:3]
