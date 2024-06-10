@@ -1,4 +1,5 @@
 """The DLMS integration."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -32,7 +33,7 @@ DEBUG_LOGGER = structlog.make_filtering_bound_logger(logging.DEBUG)
 
 _LOGGER = logging.getLogger(__name__)
 
-DlmsCosemConfigEntry = ConfigEntry["DlmsCosemData"]
+type DlmsCosemConfigEntry = ConfigEntry["DlmsCosemData"]
 
 
 @callback

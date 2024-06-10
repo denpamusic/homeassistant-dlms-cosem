@@ -12,7 +12,7 @@ skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.tox,.vscode,build,*/translat
 ignore-words-list = "hass"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 show_error_codes = true
 follow_imports = "silent"
 local_partial_types = true
@@ -201,7 +201,7 @@ legacy_tox_ini = """
 
     [gh-actions]
     python =
-        3.11: lint, type
+        3.12: lint, type
 
     [testenv:lint]
     deps =

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Updates FLAG IDs database from DLMS UA."""
 
-
 from collections.abc import Generator
 from difflib import unified_diff
 from io import BytesIO

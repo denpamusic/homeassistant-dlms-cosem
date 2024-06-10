@@ -1,4 +1,5 @@
 """Config flow for DLMS integration."""
+
 from __future__ import annotations
 
 import asyncio
