@@ -271,9 +271,9 @@ class DlmsConnection:
         """Return the serial number."""
         return cast(str, self.entry.data[ATTR_EQUIPMENT_ID])
 
-    @classmethod
+    @staticmethod
     async def async_check(
-        cls, hass: HomeAssistant, data: MutableMapping[str, Any]
+        hass: HomeAssistant, data: MutableMapping[str, Any]
     ) -> DlmsClient:
         """Check DLMS meter connection."""
         client = DlmsClient(
