@@ -70,7 +70,7 @@ class CosemEntity(Entity):
         """Return the device info."""
         return DeviceInfo(
             name=f"{self.connection.manufacturer} {self.connection.model}",
-            identifiers={(DOMAIN, self.connection.entry.unique_id)},
+            identifiers={(DOMAIN, str(self.connection.entry.unique_id))},
             manufacturer=self.connection.manufacturer,
             model=self.connection.model,
             serial_number=self.connection.equipment_id,

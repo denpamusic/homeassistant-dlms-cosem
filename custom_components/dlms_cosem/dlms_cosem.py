@@ -117,7 +117,7 @@ class DlmsClient:
     _host: str
     _password: bytes
     _physical_address: int
-    _port: str
+    _port: int
     _timeout: int = TIMEOUT
     client: BlockingDlmsClient | None
     hass: HomeAssistant
@@ -142,8 +142,9 @@ class DlmsClient:
 
     def _get_attribute(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the COSEM attribute."""
-        response = self.client.get(attribute)
-        return A_XDR_DECODER.decode(response)[ATTR_DATA]
+        if self.client:
+            response = self.client.get(attribute)
+            return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
     async def async_connect(self) -> None:
         """Initiate the connection and associate the client."""

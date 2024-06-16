@@ -9,10 +9,9 @@ from operator import itemgetter
 from typing import Any, Final
 
 from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
-from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -62,7 +61,7 @@ async def validate_input(
     return client
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
+class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for DLMS integration."""
 
     VERSION = 1
@@ -73,7 +72,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is None:
             return self.async_show_form(
@@ -98,10 +97,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
     async def async_step_identify(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the identify step."""
 
-        if self.identify_task is None:
+        if not self.identify_task:
             self.identify_task = self.hass.async_create_task(
                 self._async_identify_device()
             )
@@ -125,7 +124,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
     async def async_step_finish(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Finish the integration config."""
         await self.client.async_disconnect()
         manufacturer, model, equipment_id = DEVICE_INFO_GETTER(self.init_info)
@@ -138,7 +137,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
     async def async_step_identify_failed(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle issues that need transition await from progress step."""
         return self.async_abort(reason="identify_failed")
 
