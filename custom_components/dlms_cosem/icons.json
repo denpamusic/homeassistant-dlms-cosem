@@ -1,0 +1,23 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "self_test": {
+        "default": "mdi:meter-electric-outline"
+      }
+    },
+    "sensor": {
+      "active_tariff": {
+        "default": "mdi:progress-clock"
+      },
+      "front_cover_opened": {
+        "default": "mdi:meter-electric-outline"
+      },
+      "magnetic_field_detected": {
+        "default": "mdi:magnet-on"
+      },
+      "terminals_cover_opened": {
+        "default": "mdi:screwdriver"
+      }
+    }
+  }
+}
