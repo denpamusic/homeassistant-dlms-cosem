@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any
 
 from dlms_cosem import cosem, enumerations
 from homeassistant.components.binary_sensor import (
@@ -17,32 +15,32 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CosemEntity, CosemEntityDescription, DlmsCosemConfigEntry
+from . import DlmsCosemConfigEntry
 from .const import DEFAULT_SCAN_INTERVAL
-from .dlms_cosem import DlmsConnection, async_extract_error_codes
+from .dlms_cosem import async_extract_error_codes
+from .entity import CosemEntity, CosemEntityDescription
 
 SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
 
 PARALLEL_UPDATES = 0
 
 
-@dataclass(frozen=True, kw_only=True, slots=True)
+@dataclass(frozen=True, kw_only=True)
 class CosemBinarySensorEntityDescription(
-    BinarySensorEntityDescription, CosemEntityDescription
+    CosemEntityDescription, BinarySensorEntityDescription
 ):
     """Describes the COSEM binary sensor entity."""
 
     interface: enumerations.CosemInterface = enumerations.CosemInterface.DATA
-    value_fn: Callable[[Any], bool]
 
 
 BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
     CosemBinarySensorEntityDescription(
         key="self_test",
-        translation_key="self_test",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         obis=cosem.Obis(0, 0, 97, 97, 0),
+        translation_key="self_test",
         value_fn=lambda x: any(byte for byte in x),
     ),
 )
@@ -52,15 +50,6 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
     """Represents the COSEM binary sensor platform."""
 
     entity_description: CosemBinarySensorEntityDescription
-
-    def __init__(
-        self,
-        connection: DlmsConnection,
-        description: CosemBinarySensorEntityDescription,
-    ):
-        """Initialize the COSEM sensor object."""
-        self.connection = connection
-        self.entity_description = description
 
     async def async_update(self) -> None:
         """Update entity state."""
