@@ -1,6 +1,7 @@
 """Contains base DLMS/COSEM entity."""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from functools import cached_property
 from typing import Any
 
@@ -13,6 +14,7 @@ from .const import DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_AVAILABLE
 from .dlms_cosem import DlmsConnection
 
 
+@dataclass(frozen=True, kw_only=True)
 class CosemEntityDescription(EntityDescription):
     """Describes the COSEM entity."""
 
