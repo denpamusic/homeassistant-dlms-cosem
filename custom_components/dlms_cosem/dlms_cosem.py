@@ -140,12 +140,6 @@ class DlmsClient:
         self.client = None
         self.hass = hass
 
-    def _get_attribute(self, attribute: cosem.CosemAttribute) -> Any:
-        """Get the COSEM attribute."""
-        if self.client:
-            response = self.client.get(attribute)
-            return A_XDR_DECODER.decode(response)[ATTR_DATA]
-
     async def async_connect(self) -> None:
         """Initiate the connection and associate the client."""
         if not self.client:
@@ -163,10 +157,18 @@ class DlmsClient:
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the COSEM attribute and decode it."""
+
+        def _get_cosem_attribute(
+            client: BlockingDlmsClient, attribute: cosem.CosemAttribute
+        ) -> Any:
+            """Get the COSEM attribute."""
+            response = client.get(attribute)
+            return A_XDR_DECODER.decode(response)[ATTR_DATA]
+
         if self.client:
             async with self.hass.timeout.async_timeout(TIMEOUT, DOMAIN):
                 return await self.hass.async_add_executor_job(
-                    self._get_attribute, attribute
+                    _get_cosem_attribute, self.client, attribute
                 )
 
     async def async_disconnect(self) -> None:
