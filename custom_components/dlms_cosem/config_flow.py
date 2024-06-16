@@ -102,7 +102,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if not self.identify_task:
             self.identify_task = self.hass.async_create_task(
-                self._async_identify_device()
+                self._async_identify_device(), eager_start=False
             )
 
         if not self.identify_task.done():
