@@ -1,5 +1,5 @@
 codespell==2.3.0
-mypy-dev==1.11.0a6
+mypy-dev==1.11.0a9
 pre-commit==3.7.1
 ruff==0.4.9
 tomli==2.0.1
