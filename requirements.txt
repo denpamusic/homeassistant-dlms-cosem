@@ -1,4 +1,4 @@
-aiofiles==23.2.1
+aiofiles==24.1.0
 dlms-cosem==24.1.0
 homeassistant>=2024.6.0
 ijson==3.3.0
