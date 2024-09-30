@@ -100,8 +100,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_identify(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle the identify step."""
-
+        """Identify the device."""
         if not self.identify_task:
             self.identify_task = self.hass.async_create_task(
                 self._async_identify_device(), eager_start=False
