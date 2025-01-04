@@ -4,4 +4,4 @@ pre-commit==4.0.1
 ruff==0.8.4
 tomli==2.2.1
 tox==4.20.0
-types-aiofiles==24.1.0.20240626
+types-aiofiles==24.1.0.20241221
