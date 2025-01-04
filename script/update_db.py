@@ -15,12 +15,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 URL: Final = "https://www.dlms.com/srv/lib/Export_Flagids.php"
 FILENAME: Final = "dlms_flagids.json"
-COL: dict[str, int] = {
-    "flag_id": 1,
-    "manufacturer": 2,
-    "country": 3,
-    "region": 4,
-}
+COL: dict[str, int] = {"flag_id": 1, "manufacturer": 2, "country": 3, "region": 4}
 
 JSON_PATH = Path(f"custom_components/dlms_cosem/{FILENAME}")
 OVERRIDES: dict[str, str] = {

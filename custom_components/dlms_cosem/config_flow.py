@@ -131,10 +131,8 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
         await client.async_disconnect()
         manufacturer, model, equipment_id = DEVICE_INFO_GETTER(self.init_info)
         await self._async_set_unique_id(equipment_id)
-
         return self.async_create_entry(
-            title=f"{manufacturer} {model}",
-            data=self.init_info,
+            title=f"{manufacturer} {model}", data=self.init_info
         )
 
     async def async_step_identify_failed(
