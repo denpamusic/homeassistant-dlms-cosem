@@ -23,7 +23,7 @@ OVERRIDES: dict[str, str] = {
 }
 
 
-def worksheet_items(ws: Worksheet) -> Generator[tuple[str, str], None, None]:
+def worksheet_items(ws: Worksheet) -> Generator[tuple[str, str]]:
     """Return flag id and manufacturer tuple from the worksheet."""
     row = 2
     while row < ws.max_row:
