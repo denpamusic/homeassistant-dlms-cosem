@@ -1,4 +1,4 @@
-codespell==2.3.0
+codespell==2.4.1
 mypy-dev==1.16.0a1
 pre-commit==4.0.1
 ruff==0.9.3
