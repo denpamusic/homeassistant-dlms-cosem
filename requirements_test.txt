@@ -1,7 +1,7 @@
 codespell==2.4.1
 mypy-dev==1.16.0a3
 pre-commit==4.1.0
-ruff==0.9.4
+ruff==0.9.6
 tomli==2.2.1
 tox==4.24.1
 types-aiofiles==24.1.0.20241221
