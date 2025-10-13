@@ -3,5 +3,5 @@ mypy-dev==1.18.0a4
 pre-commit==4.3.0
 ruff==0.12.10
 tomli==2.2.1
-tox==4.29.0
+tox==4.31.0
 types-aiofiles==24.1.0.20250822
