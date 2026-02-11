@@ -1,4 +1,4 @@
-aiofiles==24.1.0
+aiofiles==25.1.0
 git+https://github.com/denpaforks/dlms-cosem.git@master#dlms-cosem==24.1.0
 homeassistant>=2024.6.0
 ijson==3.4.0
