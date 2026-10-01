@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.10
+    rev: v0.16.9
     hooks:
       - id: ruff-check
       - id: ruff-format
@@ -14,3 +14,11 @@ repos:
     hooks:
       - id: check-json
         exclude: (.vscode|tests/)
+  - repo: local
+    hooks:
+      - id: sync-translations
+        name: sync translations
+        entry: python scripts/sync_translations.py --sort
+        language: system
+        pass_filenames: false
+        files: ^custom_components/dlms_cosem/(strings\.json|translations/.*\.json)$
