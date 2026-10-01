@@ -2,16 +2,15 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.9
+    rev: v0.16.10
     hooks:
-      - id: ruff
-        args:
-          - --fix
+      - id: ruff-check
+      - id: ruff-format
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.3
     hooks:
-        - id: codespell
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+      - id: codespell
+  - repo: "builtin"
     hooks:
-        - id: mypy
+      - id: check-json
+        exclude: (.vscode|tests/)

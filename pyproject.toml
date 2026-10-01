@@ -8,11 +8,11 @@ authors = [
 description = "DLMS/COSEM smart energy meter integration for Home Assistant."
 
 [tool.codespell]
-skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.tox,.vscode,build,*/translations/*.json,dlms_flagids.json"
+skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.tox,.vscode,build,*/translations/*.json,custom_components/dlms_cosem/dlms_flagids.json"
 ignore-words-list = "hass"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 platform = "linux"
 show_error_codes = true
 follow_imports = "normal"
@@ -64,7 +64,7 @@ exclude = [
 ]
 line-length = 88
 indent-width = 4
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [
@@ -150,6 +150,7 @@ ignore = [
     "PLR0912", # Too many branches ({branches} > {max_branches})
     "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
     "PLR0915", # Too many statements ({statements} > {max_statements})
+    "PLR0917", # Too many positional arguments
     "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
     "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
     "UP006", # keep type annotation style as is
@@ -203,7 +204,7 @@ legacy_tox_ini = """
 
     [gh-actions]
     python =
-        3.13: lint, type
+        3.14: lint, type
 
     [testenv:lint]
     deps =
@@ -211,8 +212,9 @@ legacy_tox_ini = """
         -r{toxinidir}/requirements_test.txt
 
     commands =
-        codespell
-        ruff check .
+        prek run codespell --all-files
+        prek run ruff-check --all-files
+        prek run check-json --all-files
 
     [testenv:test]
     deps =
