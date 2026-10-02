@@ -1,17 +1,18 @@
 """Contains base DLMS/COSEM entity."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any
 
 from dlms_cosem import cosem, enumerations
-from homeassistant.core import callback
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity import DeviceInfo, Entity, EntityDescription
+from homeassistant.helpers.entity import DeviceInfo, EntityDescription
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DEFAULT_ATTRIBUTE, DOMAIN, SIGNAL_AVAILABLE
-from .dlms_cosem import DlmsConnection
+from .const import DEFAULT_ATTRIBUTE, DOMAIN
+from .coordinator import DlmsCoordinator
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -24,36 +25,44 @@ class CosemEntityDescription(EntityDescription):
     value_fn: Callable[[Any], Any]
 
 
-class CosemEntity(Entity):
+class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
     """Represents the COSEM entity."""
 
     _attr_has_entity_name = True
-    connection: DlmsConnection
     entity_description: CosemEntityDescription
 
-    def __init__(self, connection: DlmsConnection, description: CosemEntityDescription):
+    def __init__(
+        self, coordinator: DlmsCoordinator, description: CosemEntityDescription
+    ) -> None:
         """Initialize the COSEM object."""
-        self.connection = connection
+        super().__init__(coordinator)
         self.entity_description = description
 
     async def async_added_to_hass(self) -> None:
-        """Run when entity about to be added to hass."""
-        self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_AVAILABLE, self._available_callback
-            )
+        """Run when entity is added to hass."""
+        await super().async_added_to_hass()
+        self.coordinator.async_register_attribute(
+            self.entity_description.key, self.cosem_attribute
         )
 
-    @callback
-    def _available_callback(self, available: bool) -> None:
-        """Mark entity as un/available and update ha state."""
-        self._attr_available = available
-        self.async_schedule_update_ha_state(force_refresh=True if available else False)
+    async def async_will_remove_from_hass(self) -> None:
+        """Run when entity will be removed from hass."""
+        await super().async_will_remove_from_hass()
+        self.coordinator.async_unregister_attribute(self.entity_description.key)
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return (
+            super().available
+            and self.coordinator.data is not None
+            and self.coordinator.data.get(self.entity_description.key) is not None
+        )
 
     @cached_property
     def unique_id(self) -> str:
         """Return the unique ID."""
-        return f"{self.connection.entry.unique_id}-{self.entity_description.key}"
+        return f"{self.coordinator.connection.entry.unique_id}-{self.entity_description.key}"
 
     @cached_property
     def cosem_attribute(self) -> cosem.CosemAttribute:
@@ -67,11 +76,12 @@ class CosemEntity(Entity):
     @cached_property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
+        connection = self.coordinator.connection
         return DeviceInfo(
-            name=f"{self.connection.manufacturer} {self.connection.model}",
-            identifiers={(DOMAIN, self.connection.equipment_id)},
-            manufacturer=self.connection.manufacturer,
-            model=self.connection.model,
-            serial_number=self.connection.equipment_id,
-            sw_version=self.connection.sw_version,
+            name=f"{connection.manufacturer} {connection.model}",
+            identifiers={(DOMAIN, connection.equipment_id)},
+            manufacturer=connection.manufacturer,
+            model=connection.model,
+            serial_number=connection.equipment_id,
+            sw_version=connection.sw_version,
         )

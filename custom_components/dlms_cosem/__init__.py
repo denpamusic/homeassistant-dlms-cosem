@@ -14,10 +14,10 @@ from homeassistant.const import (
 )
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 import structlog
 
-from .const import CONF_HOST, SIGNAL_AVAILABLE
+from .const import CONF_HOST
+from .coordinator import DlmsCoordinator
 from .dlms_cosem import DlmsConnection
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -42,6 +42,7 @@ class DlmsCosemData:
     """Represents DLMS/COSEM integration runtime data."""
 
     connection: DlmsConnection
+    coordinator: DlmsCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) -> bool:
@@ -60,7 +61,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
             f"Timed out while connecting to {connection.entry.data[CONF_HOST]}"
         ) from err
 
-    entry.runtime_data = DlmsCosemData(connection)
+    coordinator = DlmsCoordinator(hass, connection)
+    entry.runtime_data = DlmsCosemData(connection=connection, coordinator=coordinator)
 
     async def _async_close_connection(event: Event | None = None) -> None:
         """Close DLMS connection on HA Stop."""
@@ -70,7 +72,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_close_connection)
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    async_dispatcher_send(hass, SIGNAL_AVAILABLE, True)
+    await coordinator.async_config_entry_first_refresh()
     return True
 
 

@@ -25,9 +25,6 @@ DEFAULT_PASSWORD: Final = "111111"
 DEFAULT_PORT: Final = 23
 DEFAULT_SCAN_INTERVAL: Final = 15  # seconds
 
-# Dispatcher signals
-SIGNAL_AVAILABLE: Final = "available"
-
 # COSEM attributes
 COSEM_EQUIPMENT_ID = cosem.CosemAttribute(
     interface=enumerations.CosemInterface.DATA,

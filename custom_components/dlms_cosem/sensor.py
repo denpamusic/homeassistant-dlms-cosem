@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from typing import Any
 
 from dlms_cosem import cosem, enumerations, time
 from homeassistant.components.sensor import (
@@ -27,13 +27,8 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DlmsCosemConfigEntry
-from .const import DEFAULT_SCAN_INTERVAL
 from .dlms_cosem import async_dlms_datetime_to_ha_datetime
 from .entity import CosemEntity, CosemEntityDescription
-
-SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
-
-PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -358,10 +353,16 @@ class CosemSensor(CosemEntity, SensorEntity):
 
     entity_description: CosemSensorEntityDescription
 
-    async def async_update(self) -> None:
-        """Update entity state."""
-        if response := await self.connection.async_get(self.cosem_attribute):
-            self._attr_native_value = self.entity_description.value_fn(response)
+    @property
+    def native_value(self) -> Any:
+        """Return the state of the sensor."""
+        if (
+            self.coordinator.data is not None
+            and (raw := self.coordinator.data.get(self.entity_description.key))
+            is not None
+        ):
+            return self.entity_description.value_fn(raw)
+        return None
 
 
 async def async_setup_entry(
@@ -370,8 +371,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
     """Set up the sensor platform."""
-    data = entry.runtime_data
+    coordinator = entry.runtime_data.coordinator
     async_add_entities(
-        CosemSensor(data.connection, description) for description in SENSOR_TYPES
+        CosemSensor(coordinator, description) for description in SENSOR_TYPES
     )
     return True

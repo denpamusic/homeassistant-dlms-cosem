@@ -6,7 +6,6 @@ import asyncio
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 import datetime as dt
-from datetime import datetime, timedelta
 from functools import cached_property
 import logging
 from pathlib import Path
@@ -23,8 +22,6 @@ from dlms_cosem.security import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_call_later
 import ijson
 
 from .const import (
@@ -35,13 +32,10 @@ from .const import (
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     DEFAULT_MODEL,
-    SIGNAL_AVAILABLE,
 )
 
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
-
-RECONNECT_INTERVAL: Final = timedelta(seconds=3)
 
 TIMEOUT: Final = 5
 READ_DELAY: Final = 0.05
@@ -186,6 +180,11 @@ class DlmsClient:
 
             self.client = None
 
+    @property
+    def connected(self) -> bool:
+        """Return whether client is connected."""
+        return self.client is not None
+
     @cached_property
     def io(self) -> IoImplementation:
         """Return the IO implementation."""
@@ -200,14 +199,12 @@ class DlmsClient:
 class DlmsConnection:
     """Represents DLMS connection."""
 
-    _update_semaphore: asyncio.Semaphore
     client: DlmsClient
     entry: ConfigEntry
     hass: HomeAssistant
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize a new DLMS/COSEM connection."""
-        self._update_semaphore = asyncio.Semaphore()
         self.client = DlmsClient(
             hass,
             host=entry.data[CONF_HOST],
@@ -218,6 +215,11 @@ class DlmsConnection:
         self.entry = entry
         self.hass = hass
 
+    @property
+    def connected(self) -> bool:
+        """Return whether connection is active."""
+        return self.client.connected
+
     async def async_connect(self) -> None:
         """Initialize the connection."""
         await self.client.async_connect()
@@ -227,31 +229,8 @@ class DlmsConnection:
         await self.client.async_disconnect()
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
-        """Get the attribute or initiate reconnect on failure."""
-        async with self._update_semaphore:
-            try:
-                return await self.client.async_get(attribute)
-            except Exception as err:
-                async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, False)
-                await self._connection_error(err)
-
-    async def _connection_error(self, err: Exception) -> None:
-        """Log error and schedule a reconnect attempt."""
-        await self.async_close()
-        _LOGGER.warning(
-            "Connection lost, retrying in the background: %s",
-            "connection timed out" if isinstance(err, TimeoutError) else err,
-        )
-        async_call_later(self.hass, RECONNECT_INTERVAL, self._reconnect)
-
-    async def _reconnect(self, event_time: datetime) -> None:
-        """Try to reconnect on connection failure."""
-        try:
-            await self.async_connect()
-        except Exception as err:
-            await self._connection_error(err)
-        else:
-            async_dispatcher_send(self.hass, SIGNAL_AVAILABLE, True)
+        """Get the COSEM attribute."""
+        return await self.client.async_get(attribute)
 
     @cached_property
     def manufacturer(self) -> str:
