@@ -20,5 +20,5 @@
         "*.yaml": "home-assistant"
     },
     "json.format.keepLines": true,
-    "python.defaultInterpreterPath": "python3.12"
+    "python.defaultInterpreterPath": "python3.14"
 }
