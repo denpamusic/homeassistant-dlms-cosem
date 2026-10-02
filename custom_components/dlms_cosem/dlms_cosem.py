@@ -6,12 +6,12 @@ import asyncio
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 import datetime as dt
-from functools import cached_property
+from functools import cache, cached_property
+import json
 import logging
 from pathlib import Path
 from typing import Any, Final, cast
 
-import aiofiles
 from dlms_cosem import a_xdr, cosem
 from dlms_cosem.client import DlmsClient as BlockingDlmsClient
 from dlms_cosem.io import BlockingTcpIO, HdlcTransport, IoImplementation
@@ -22,7 +22,6 @@ from dlms_cosem.security import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant, callback
-import ijson
 
 from .const import (
     ATTR_DATA,
@@ -53,24 +52,27 @@ A_XDR_DECODER = a_xdr.AXdrDecoder(
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_decode_flag_id(flag_id: str) -> str:
+@cache
+def _load_flag_ids() -> dict[str, str]:
+    """Load flag IDs from the JSON file."""
+    file_path = Path(__file__).with_name("dlms_flagids.json")
+    return cast(dict[str, str], json.loads(file_path.read_text(encoding="utf-8")))
+
+
+async def async_decode_flag_id(hass: HomeAssistant, flag_id: str) -> str:
     """Decode the flag id."""
-    dlms_flag_ids_file = Path(__file__).with_name("dlms_flagids.json")
-
-    async with aiofiles.open(dlms_flag_ids_file, mode="rb") as f:
-        async for key, value in ijson.kvitems_async(f, ""):
-            if key == flag_id:
-                return cast(str, value)
-
-    raise KeyError
+    flag_ids = await hass.async_add_executor_job(_load_flag_ids)
+    return flag_ids[flag_id]
 
 
-async def async_decode_logical_device_name(logical_device_name: str) -> tuple[str, str]:
+async def async_decode_logical_device_name(
+    hass: HomeAssistant, logical_device_name: str
+) -> tuple[str, str]:
     """Decode logical device name."""
     flag_id = logical_device_name[0:3]
 
     try:
-        manufacturer = await async_decode_flag_id(flag_id)
+        manufacturer = await async_decode_flag_id(hass, flag_id)
     except KeyError:
         manufacturer = "Unknown"
 

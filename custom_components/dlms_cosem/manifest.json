@@ -16,9 +16,7 @@
     "dlms_cosem"
   ],
   "requirements": [
-    "dlms-cosem@git+https://github.com/denpaforks/dlms-cosem.git@master==2026.1.0",
-    "aiofiles>=25.1.0",
-    "ijson==3.5.1"
+    "dlms-cosem@git+https://github.com/denpaforks/dlms-cosem.git@master==2026.1.0"
   ],
   "version": "0.1.9"
 }

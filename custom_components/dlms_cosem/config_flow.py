@@ -189,7 +189,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
         client = cast(DlmsClient, self.client)
         logical_device_name: bytes = await client.async_get(COSEM_LOGICAL_DEVICE_NAME)
         manufacturer, model = await async_decode_logical_device_name(
-            logical_device_name.decode(encoding="utf-8")
+            self.hass, logical_device_name.decode(encoding="utf-8")
         )
         equipment_id = await client.async_get(COSEM_EQUIPMENT_ID)
         sw_version = await client.async_get(COSEM_SOFTWARE_PACKAGE)
