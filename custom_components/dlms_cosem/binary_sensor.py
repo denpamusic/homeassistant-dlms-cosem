@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from typing import Any
 
 from dlms_cosem import cosem, enumerations
 from homeassistant.components.binary_sensor import (
@@ -16,13 +16,8 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DlmsCosemConfigEntry
-from .const import DEFAULT_SCAN_INTERVAL
 from .dlms_cosem import async_extract_error_codes
 from .entity import CosemEntity, CosemEntityDescription
-
-SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
-
-PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -51,16 +46,29 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
 
     entity_description: CosemBinarySensorEntityDescription
 
-    async def async_update(self) -> None:
-        """Update entity state."""
-        if response := await self.connection.async_get(self.cosem_attribute):
-            self._attr_is_on = self.entity_description.value_fn(response)
-            if self.entity_description.key == "self_test":
-                self._attr_extra_state_attributes = (
-                    {"error_codes": ", ".join(async_extract_error_codes(response))}
-                    if self.is_on
-                    else {}
-                )
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if the binary sensor is on."""
+        if (
+            self.coordinator.data is not None
+            and (raw := self.coordinator.data.get(self.entity_description.key))
+            is not None
+        ):
+            return bool(self.entity_description.value_fn(raw))
+        return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return extra state attributes."""
+        if (
+            self.entity_description.key == "self_test"
+            and self.is_on
+            and self.coordinator.data is not None
+            and (raw := self.coordinator.data.get(self.entity_description.key))
+            is not None
+        ):
+            return {"error_codes": ", ".join(async_extract_error_codes(raw))}
+        return {}
 
 
 async def async_setup_entry(
@@ -69,9 +77,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
     """Set up the binary sensor platform."""
-    data = entry.runtime_data
+    coordinator = entry.runtime_data.coordinator
     async_add_entities(
-        CosemBinarySensor(data.connection, description)
+        CosemBinarySensor(coordinator, description)
         for description in BINARY_SENSOR_TYPES
     )
     return True
