@@ -35,7 +35,6 @@ from .const import (
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     DEFAULT_MODEL,
-    DOMAIN,
     SIGNAL_AVAILABLE,
 )
 
@@ -167,7 +166,7 @@ class DlmsClient:
             return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
         if self.client:
-            async with self.hass.timeout.async_timeout(TIMEOUT, DOMAIN):
+            async with asyncio.timeout(TIMEOUT):
                 result = await self.hass.async_add_executor_job(
                     _get_cosem_attribute, self.client, attribute
                 )
