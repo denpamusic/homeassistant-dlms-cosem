@@ -2,7 +2,9 @@
   "config": {
     "abort": {
       "already_configured": "Device is already configured",
-      "identify_failed": "Device identification failed, try again"
+      "identify_failed": "Device identification failed, try again",
+      "reconfigure_successful": "Re-configuration was successful",
+      "unique_id_mismatch": "Cannot reconfigure with a different device"
     },
     "error": {
       "cannot_connect": "Failed to connect",
@@ -12,6 +14,14 @@
       "identify_device": "Identifying device..."
     },
     "step": {
+      "reconfigure": {
+        "data": {
+          "host": "Host",
+          "password": "Password",
+          "physical_address": "Physical address",
+          "port": "Port"
+        }
+      },
       "user": {
         "data": {
           "host": "Host",

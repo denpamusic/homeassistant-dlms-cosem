@@ -2,7 +2,9 @@
   "config": {
     "abort": {
       "already_configured": "Устройство уже настроено",
-      "identify_failed": "Ошибка определения устройства, попробуйте позже"
+      "identify_failed": "Ошибка определения устройства, попробуйте позже",
+      "reconfigure_successful": "Перенастройка успешно завершена",
+      "unique_id_mismatch": "Вы не можете изменить устройство на другое"
     },
     "error": {
       "cannot_connect": "Ошибка подключения",
@@ -12,6 +14,14 @@
       "identify_device": "Определяем устройство..."
     },
     "step": {
+      "reconfigure": {
+        "data": {
+          "host": "Хост",
+          "password": "Пароль",
+          "physical_address": "Физический адрес",
+          "port": "Порт"
+        }
+      },
       "user": {
         "data": {
           "host": "Хост",

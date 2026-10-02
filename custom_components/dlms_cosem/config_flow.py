@@ -97,6 +97,44 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reconfiguring an existing entry."""
+        errors: dict[str, str] = {}
+        entry = self._get_reconfigure_entry()
+
+        if user_input is not None:
+            try:
+                client = await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+            else:
+                try:
+                    equipment_id = await client.async_get(COSEM_EQUIPMENT_ID)
+                except Exception:
+                    errors["base"] = "cannot_connect"
+                else:
+                    await self.async_set_unique_id(equipment_id)
+                    self._abort_if_unique_id_mismatch(reason="unique_id_mismatch")
+                    return self.async_update_reload_and_abort(
+                        entry,
+                        data_updates=user_input,
+                    )
+                finally:
+                    await client.async_disconnect()
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_DATA_SCHEMA, user_input or entry.data
+            ),
+            errors=errors,
+        )
+
     async def async_step_identify(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
