@@ -228,8 +228,8 @@ def main(argv: list[str] | None = None) -> int:
         check_only=args.check,
     )
 
-    old_dump = json.dumps(old_data, indent=2, ensure_ascii=False) + "\n"
-    new_dump = json.dumps(sorted_manufacturers, indent=2, ensure_ascii=False) + "\n"
+    old_dump = json.dumps(old_data, indent=2) + "\n"
+    new_dump = json.dumps(sorted_manufacturers, indent=2) + "\n"
     has_changes = old_dump != new_dump
 
     if args.diff and has_changes:
