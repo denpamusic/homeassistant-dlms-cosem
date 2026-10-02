@@ -45,6 +45,7 @@ LOGICAL_SERVER_ADDRESS: Final = 1
 RECONNECT_INTERVAL: Final = timedelta(seconds=3)
 
 TIMEOUT: Final = 5
+READ_DELAY: Final = 0.05
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
@@ -167,9 +168,11 @@ class DlmsClient:
 
         if self.client:
             async with self.hass.timeout.async_timeout(TIMEOUT, DOMAIN):
-                return await self.hass.async_add_executor_job(
+                result = await self.hass.async_add_executor_job(
                     _get_cosem_attribute, self.client, attribute
                 )
+            await asyncio.sleep(READ_DELAY)
+            return result
 
     async def async_disconnect(self) -> None:
         """Close the connection."""
@@ -205,7 +208,7 @@ class DlmsConnection:
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize a new DLMS/COSEM connection."""
-        self._update_semaphore = asyncio.Semaphore(1)
+        self._update_semaphore = asyncio.Semaphore()
         self.client = DlmsClient(
             hass,
             host=entry.data[CONF_HOST],
