@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 
-from dlms_cosem.exceptions import CommunicationError
+from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
@@ -55,7 +55,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
 
     try:
         await connection.async_connect()
-    except CommunicationError as err:
+    except (
+        CommunicationError,
+        LocalDlmsProtocolError,
+        TimeoutError,
+        OSError,
+    ) as err:
         await connection.async_close()
         raise ConfigEntryNotReady(
             f"Timed out while connecting to {connection.entry.data[CONF_HOST]}"

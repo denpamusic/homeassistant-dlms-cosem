@@ -29,7 +29,12 @@ from .const import (
     DEFAULT_PORT,
     DOMAIN,
 )
-from .dlms_cosem import DlmsClient, DlmsConnection, async_decode_logical_device_name
+from .dlms_cosem import (
+    READ_DELAY,
+    DlmsClient,
+    DlmsConnection,
+    async_decode_logical_device_name,
+)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -105,6 +110,9 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
 
         if user_input is not None:
+            if hasattr(entry, "runtime_data") and entry.runtime_data:
+                await entry.runtime_data.connection.async_close()
+
             try:
                 client = await validate_input(self.hass, user_input)
             except CannotConnect:
@@ -120,12 +128,15 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
                 else:
                     await self.async_set_unique_id(equipment_id)
                     self._abort_if_unique_id_mismatch(reason="unique_id_mismatch")
+                    await client.async_disconnect()
+                    await asyncio.sleep(READ_DELAY)
                     return self.async_update_reload_and_abort(
                         entry,
                         data_updates=user_input,
                     )
                 finally:
-                    await client.async_disconnect()
+                    if client.connected:
+                        await client.async_disconnect()
 
         return self.async_show_form(
             step_id="reconfigure",

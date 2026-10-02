@@ -29,6 +29,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hass,
             _LOGGER,
             name=DOMAIN,
+            config_entry=connection.entry,
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
         self.connection = connection
