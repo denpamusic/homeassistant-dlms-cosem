@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Final
 
 from dlms_cosem import cosem, enumerations
@@ -17,13 +18,15 @@ CONF_HOST: Final = "host"
 CONF_PASSWORD: Final = "password"
 CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 CONF_PORT: Final = "port"
+CONF_READ_DELAY: Final = "read_delay"
 
 # Defaults
 DEFAULT_ATTRIBUTE: Final = 2
 DEFAULT_MODEL: Final = "Smart meter"
 DEFAULT_PASSWORD: Final = "111111"
 DEFAULT_PORT: Final = 23
-DEFAULT_SCAN_INTERVAL: Final = 15  # seconds
+DEFAULT_READ_DELAY: Final = 250  # milliseconds
+DEFAULT_SCAN_INTERVAL: Final = timedelta(seconds=15)
 
 # COSEM attributes
 COSEM_EQUIPMENT_ID = cosem.CosemAttribute(

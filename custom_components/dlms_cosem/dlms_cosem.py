@@ -30,14 +30,14 @@ from .const import (
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
+    CONF_READ_DELAY,
     DEFAULT_MODEL,
 )
 
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 
-TIMEOUT: Final = 5
-READ_DELAY: Final = 0.05
+READ_TIMEOUT: Final = 5  # seconds
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
@@ -114,7 +114,8 @@ class DlmsClient:
     _password: bytes
     _physical_address: int
     _port: int
-    _timeout: int = TIMEOUT
+    _read_delay: int
+    _read_timeout: int = READ_TIMEOUT
     client: BlockingDlmsClient | None
     hass: HomeAssistant
 
@@ -125,14 +126,16 @@ class DlmsClient:
         password: str,
         physical_address: int,
         port: int,
-        timeout: int = TIMEOUT,
+        read_delay: int,
+        read_timeout: int = READ_TIMEOUT,
     ) -> None:
         """Initialize a new async DLMS client."""
         self._host = host
         self._password = bytes(password, encoding="utf-8")
         self._physical_address = physical_address
         self._port = port
-        self._timeout = timeout
+        self._read_delay = read_delay
+        self._read_timeout = read_timeout
         self.client = None
         self.hass = hass
 
@@ -162,11 +165,11 @@ class DlmsClient:
             return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
         if self.client:
-            async with asyncio.timeout(TIMEOUT):
+            async with asyncio.timeout(self._read_timeout):
                 result = await self.hass.async_add_executor_job(
                     _get_cosem_attribute, self.client, attribute
                 )
-            await asyncio.sleep(READ_DELAY)
+            await asyncio.sleep(self._read_delay / 1000)
             return result
 
     async def async_disconnect(self) -> None:
@@ -190,7 +193,9 @@ class DlmsClient:
     @cached_property
     def io(self) -> IoImplementation:
         """Return the IO implementation."""
-        return BlockingTcpIO(host=self._host, port=self._port, timeout=self._timeout)
+        return BlockingTcpIO(
+            host=self._host, port=self._port, timeout=self._read_timeout
+        )
 
     @cached_property
     def authentication(self) -> AuthenticationMethodManager:
@@ -213,6 +218,7 @@ class DlmsConnection:
             port=entry.data[CONF_PORT],
             password=entry.data[CONF_PASSWORD],
             physical_address=entry.data[CONF_PHYSICAL_ADDRESS],
+            read_delay=entry.data[CONF_READ_DELAY],
         )
         self.entry = entry
         self.hass = hass
@@ -265,6 +271,7 @@ class DlmsConnection:
             port=data[CONF_PORT],
             password=data[CONF_PASSWORD],
             physical_address=data[CONF_PHYSICAL_ADDRESS],
+            read_delay=data[CONF_READ_DELAY],
         )
         await client.async_connect()
         return client

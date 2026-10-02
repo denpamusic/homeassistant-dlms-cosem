@@ -19,7 +19,8 @@
           "host": "Host",
           "password": "Password",
           "physical_address": "Physical address",
-          "port": "Port"
+          "port": "Port",
+          "read_delay": "Read delay (ms)"
         }
       },
       "user": {
@@ -27,7 +28,8 @@
           "host": "Host",
           "password": "Password",
           "physical_address": "Physical address",
-          "port": "Port"
+          "port": "Port",
+          "read_delay": "Read delay (ms)"
         }
       }
     }

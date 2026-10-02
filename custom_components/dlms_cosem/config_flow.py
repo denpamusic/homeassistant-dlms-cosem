@@ -22,19 +22,16 @@ from .const import (
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
+    CONF_READ_DELAY,
     COSEM_EQUIPMENT_ID,
     COSEM_LOGICAL_DEVICE_NAME,
     COSEM_SOFTWARE_PACKAGE,
     DEFAULT_PASSWORD,
     DEFAULT_PORT,
+    DEFAULT_READ_DELAY,
     DOMAIN,
 )
-from .dlms_cosem import (
-    READ_DELAY,
-    DlmsClient,
-    DlmsConnection,
-    async_decode_logical_device_name,
-)
+from .dlms_cosem import DlmsClient, DlmsConnection, async_decode_logical_device_name
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -42,11 +39,14 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Required(CONF_PHYSICAL_ADDRESS): cv.positive_int,
         vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
+        vol.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): vol.All(
+            vol.Coerce(int), vol.Range(min=50, max=500)
+        ),
     }
 )
 
 DEVICE_INFO_GETTER = itemgetter(ATTR_MANUFACTURER, ATTR_MODEL, ATTR_EQUIPMENT_ID)
-IDENTIFY_TIMEOUT: Final = 10
+IDENTIFY_TIMEOUT: Final = 10  # seconds
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,6 +70,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for DLMS integration."""
 
     VERSION = 1
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -129,10 +130,9 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
                     await self.async_set_unique_id(equipment_id)
                     self._abort_if_unique_id_mismatch(reason="unique_id_mismatch")
                     await client.async_disconnect()
-                    await asyncio.sleep(READ_DELAY)
+                    await asyncio.sleep(user_input[CONF_READ_DELAY] / 1000)
                     return self.async_update_reload_and_abort(
-                        entry,
-                        data_updates=user_input,
+                        entry, data_updates=user_input
                     )
                 finally:
                     if client.connected:

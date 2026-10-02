@@ -16,7 +16,7 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 import structlog
 
-from .const import CONF_HOST
+from .const import CONF_HOST, CONF_READ_DELAY, DEFAULT_READ_DELAY
 from .coordinator import DlmsCoordinator
 from .dlms_cosem import DlmsConnection
 
@@ -87,3 +87,33 @@ async def async_unload_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) -
         await entry.runtime_data.connection.async_close()
 
     return unload_ok
+
+
+async def async_migrate_entry(
+    hass: HomeAssistant, config_entry: DlmsCosemConfigEntry
+) -> bool:
+    """Migrate old entry."""
+    _LOGGER.debug(
+        "Migrating from version %s.%s",
+        config_entry.version,
+        config_entry.minor_version,
+    )
+
+    if config_entry.version > 1:
+        # Downstream downgrade or unsupported major version
+        return False
+
+    if config_entry.version == 1 and config_entry.minor_version < 2:
+        new_data = {**config_entry.data}
+        new_data[CONF_READ_DELAY] = DEFAULT_READ_DELAY
+
+        hass.config_entries.async_update_entry(
+            config_entry, data=new_data, minor_version=2
+        )
+
+    _LOGGER.debug(
+        "Migration to version %s.%s successful",
+        config_entry.version,
+        config_entry.minor_version,
+    )
+    return True
