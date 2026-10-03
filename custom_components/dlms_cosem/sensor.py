@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any
 
 from dlms_cosem import cosem, enumerations, time
@@ -220,6 +221,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         obis=cosem.Obis(1, 0, 1, 8, 0),
+        scan_interval=timedelta(minutes=1),
         state_class=SensorStateClass.TOTAL_INCREASING,
         suggested_display_precision=2,
         translation_key="active_energy_total",
@@ -230,6 +232,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         obis=cosem.Obis(1, 0, 1, 8, 1),
+        scan_interval=timedelta(minutes=1),
         state_class=SensorStateClass.TOTAL_INCREASING,
         suggested_display_precision=2,
         translation_key="active_energy_tariff1",
@@ -240,6 +243,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         obis=cosem.Obis(1, 0, 1, 8, 2),
+        scan_interval=timedelta(minutes=1),
         state_class=SensorStateClass.TOTAL_INCREASING,
         suggested_display_precision=2,
         translation_key="active_energy_tariff2",
@@ -250,6 +254,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.FREQUENCY,
         native_unit_of_measurement=UnitOfFrequency.HERTZ,
         obis=cosem.Obis(1, 0, 14, 7, 0),
+        scan_interval=timedelta(minutes=1),
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         translation_key="frequency",
@@ -268,6 +273,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         obis=cosem.Obis(0, 0, 96, 9, 0),
+        scan_interval=timedelta(minutes=5),
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
         translation_key="internal_temperature",
@@ -304,6 +310,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         interface=enumerations.CosemInterface.DATA,
         obis=cosem.Obis(0, 0, 96, 2, 12),
+        scan_interval=timedelta(hours=1),
         translation_key="clock_synced",
         value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
             time.datetime_from_bytes(x)[0]
@@ -316,6 +323,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         interface=enumerations.CosemInterface.DATA,
         obis=cosem.Obis(0, 0, 96, 20, 1),
+        scan_interval=timedelta(hours=1),
         translation_key="front_cover_opened",
         value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
             time.datetime_from_bytes(x)[0]
@@ -328,6 +336,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         interface=enumerations.CosemInterface.DATA,
         obis=cosem.Obis(0, 0, 96, 20, 6),
+        scan_interval=timedelta(hours=1),
         translation_key="terminals_cover_opened",
         value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
             time.datetime_from_bytes(x)[0]
@@ -340,6 +349,7 @@ SENSOR_TYPES: tuple[CosemSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         interface=enumerations.CosemInterface.DATA,
         obis=cosem.Obis(0, 0, 96, 20, 16),
+        scan_interval=timedelta(hours=1),
         translation_key="magnetic_field_detected",
         value_fn=lambda x: async_dlms_datetime_to_ha_datetime(
             time.datetime_from_bytes(x)[0]

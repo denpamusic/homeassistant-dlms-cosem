@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any
 
 from dlms_cosem import cosem, enumerations
@@ -35,6 +36,7 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         obis=cosem.Obis(0, 0, 97, 97, 0),
+        scan_interval=timedelta(hours=1),
         translation_key="self_test",
         value_fn=lambda x: any(byte for byte in x),
     ),

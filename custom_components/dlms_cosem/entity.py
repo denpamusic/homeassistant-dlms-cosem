@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import timedelta
 from functools import cached_property
 from typing import Any
 
@@ -22,6 +23,7 @@ class CosemEntityDescription(EntityDescription):
     attribute: int = DEFAULT_ATTRIBUTE
     interface: enumerations.CosemInterface
     obis: cosem.Obis
+    scan_interval: timedelta | None = None
     value_fn: Callable[[Any], Any]
 
 
@@ -42,7 +44,9 @@ class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
         self.coordinator.async_register_attribute(
-            self.entity_description.key, self.cosem_attribute
+            self.entity_description.key,
+            self.cosem_attribute,
+            self.entity_description.scan_interval,
         )
 
     async def async_will_remove_from_hass(self) -> None:

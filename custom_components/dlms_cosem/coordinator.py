@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
-from typing import Any
+import time
+from typing import Any, NamedTuple
 
 from dlms_cosem import cosem
 from dlms_cosem.client import DataResultError
@@ -15,6 +17,13 @@ from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .dlms_cosem import DlmsConnection
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class TrackedAttribute(NamedTuple):
+    """Represents a tracked COSEM attribute."""
+
+    attribute: cosem.CosemAttribute
+    scan_interval: timedelta | None = None
 
 
 class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -32,19 +41,24 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=DEFAULT_SCAN_INTERVAL,
         )
         self.connection = connection
-        self._tracked_attributes: dict[str, cosem.CosemAttribute] = {}
+        self._tracked_attributes: dict[str, TrackedAttribute] = {}
+        self._last_polled: dict[str, float] = {}
 
     @callback
     def async_register_attribute(
-        self, key: str, attribute: cosem.CosemAttribute
+        self,
+        key: str,
+        attribute: cosem.CosemAttribute,
+        scan_interval: timedelta | None = None,
     ) -> None:
         """Register an attribute to be polled."""
-        self._tracked_attributes[key] = attribute
+        self._tracked_attributes[key] = TrackedAttribute(attribute, scan_interval)
 
     @callback
     def async_unregister_attribute(self, key: str) -> None:
         """Unregister an attribute from being polled."""
         self._tracked_attributes.pop(key, None)
+        self._last_polled.pop(key, None)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from DLMS meter."""
@@ -59,15 +73,26 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ) as err:
                 raise UpdateFailed(f"Error connecting to DLMS meter: {err}") from err
 
-        data: dict[str, Any] = {}
-        for key, attribute in list(self._tracked_attributes.items()):
+        data: dict[str, Any] = dict(self.data) if self.data else {}
+        now = time.monotonic()
+        for key, tracked in list(self._tracked_attributes.items()):
+            if (
+                key in data
+                and tracked.scan_interval is not None
+                and (now - self._last_polled.get(key, 0.0))
+                < tracked.scan_interval.total_seconds()
+            ):
+                continue
+
             try:
-                data[key] = await self.connection.async_get(attribute)
+                data[key] = await self.connection.async_get(tracked.attribute)
+                self._last_polled[key] = now
             except DataResultError as err:
                 _LOGGER.debug(
-                    "Unable to read attribute %s (%s): %s", key, attribute, err
+                    "Unable to read attribute %s (%s): %s", key, tracked.attribute, err
                 )
                 data[key] = None
+                self._last_polled[key] = now
             except (
                 CommunicationError,
                 LocalDlmsProtocolError,
