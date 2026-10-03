@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Final, cast
 
 from dlms_cosem import a_xdr, cosem
-from dlms_cosem.client import DlmsClient as BlockingDlmsClient
+from dlms_cosem.client import DlmsClient as BlockingDlmsClient, DlmsConnectionSettings
 from dlms_cosem.io import HdlcTransport, IoImplementation, SerialXIO
 from dlms_cosem.security import (
     AuthenticationMethodManager,
@@ -146,6 +146,7 @@ class DlmsClient:
                     io=self.io,
                 ),
                 authentication=self.authentication,
+                connection_settings=DlmsConnectionSettings(use_rlrq_rlre=False),
             )
             for job in (self.client.connect, self.client.associate):
                 await self.hass.async_add_executor_job(job)
@@ -171,11 +172,7 @@ class DlmsClient:
     async def async_disconnect(self) -> None:
         """Close the connection."""
         if self.client:
-            for job in (
-                self.client.release_association,
-                self.client.disconnect,
-                self.client.transport.io.disconnect,
-            ):
+            for job in (self.client.release_association, self.client.disconnect):
                 with suppress(Exception):
                     await self.hass.async_add_executor_job(job)
 

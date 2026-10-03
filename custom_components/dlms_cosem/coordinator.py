@@ -19,6 +19,8 @@ from .dlms_cosem import DlmsConnection
 
 _LOGGER = logging.getLogger(__name__)
 
+RETRY_AFTER = timedelta(minutes=1)
+
 
 class TrackedAttribute(NamedTuple):
     """Represents a tracked COSEM attribute."""
@@ -109,7 +111,8 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ) as err:
                 await self.connection.async_close()
                 raise UpdateFailed(
-                    f"Communication error while reading {key}: {err}"
+                    f"Communication error while reading {key}: {err}",
+                    retry_after=RETRY_AFTER.total_seconds(),
                 ) from err
 
         return data
