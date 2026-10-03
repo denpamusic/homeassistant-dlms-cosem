@@ -1,6 +1,9 @@
 {
   "domain": "dlms_cosem",
   "name": "DLMS/COSEM",
+  "after_dependencies": [
+    "esphome"
+  ],
   "codeowners": [
     "@denpamusic"
   ],
