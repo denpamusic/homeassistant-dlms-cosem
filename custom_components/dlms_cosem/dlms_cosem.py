@@ -36,7 +36,7 @@ from .const import (
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 
-READ_TIMEOUT: Final = 5  # seconds
+READ_TIMEOUT: Final = 10  # seconds
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
