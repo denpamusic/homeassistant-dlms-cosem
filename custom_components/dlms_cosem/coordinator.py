@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+import random
 import time
 from typing import Any, NamedTuple
 
@@ -52,6 +53,13 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         scan_interval: timedelta | None = None,
     ) -> None:
         """Register an attribute to be polled."""
+        if scan_interval is not None:
+            # Introduce a random delay to avoid polling all throttled
+            # entities at the same time.
+            scan_interval += timedelta(
+                seconds=random.randint(0, int(DEFAULT_SCAN_INTERVAL.total_seconds()))
+            )
+
         self._tracked_attributes[key] = TrackedAttribute(attribute, scan_interval)
 
     @callback
