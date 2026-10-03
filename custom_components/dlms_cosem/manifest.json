@@ -6,7 +6,7 @@
   ],
   "config_flow": true,
   "dependencies": [
-    "network"
+    "usb"
   ],
   "documentation": "https://github.com/denpamusic/homeassistant-dlms-cosem",
   "integration_type": "device",
@@ -16,7 +16,7 @@
     "dlms_cosem"
   ],
   "requirements": [
-    "dlms-cosem@git+https://github.com/denpaforks/dlms-cosem.git@master"
+    "dlms-cosem@git+https://github.com/denpaforks/dlms-cosem.git@feature/serialx-io"
   ],
   "version": "0.2.0"
 }

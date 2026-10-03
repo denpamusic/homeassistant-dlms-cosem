@@ -16,7 +16,6 @@
     "step": {
       "reconfigure": {
         "data": {
-          "host": "Host",
           "password": "Password",
           "physical_address": "Physical address",
           "port": "Port",
@@ -25,7 +24,6 @@
       },
       "user": {
         "data": {
-          "host": "Host",
           "password": "Password",
           "physical_address": "Physical address",
           "port": "Port",

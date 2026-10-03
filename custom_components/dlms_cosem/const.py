@@ -14,7 +14,6 @@ ATTR_DATA: Final = "data"
 ATTR_EQUIPMENT_ID: Final = "equipment_id"
 
 # Configuration
-CONF_HOST: Final = "host"
 CONF_PASSWORD: Final = "password"
 CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 CONF_PORT: Final = "port"
@@ -24,7 +23,6 @@ CONF_READ_DELAY: Final = "read_delay"
 DEFAULT_ATTRIBUTE: Final = 2
 DEFAULT_MODEL: Final = "Smart meter"
 DEFAULT_PASSWORD: Final = "111111"
-DEFAULT_PORT: Final = 5000
 DEFAULT_READ_DELAY: Final = 250  # milliseconds
 DEFAULT_SCAN_INTERVAL: Final = timedelta(seconds=15)
 

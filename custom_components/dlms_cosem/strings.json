@@ -16,7 +16,6 @@
     "step": {
       "reconfigure": {
         "data": {
-          "host": "[%key:common::config_flow::data::host%]",
           "password": "[%key:common::config_flow::data::password%]",
           "physical_address": "Physical address",
           "port": "[%key:common::config_flow::data::port%]",
@@ -25,7 +24,6 @@
       },
       "user": {
         "data": {
-          "host": "[%key:common::config_flow::data::host%]",
           "password": "[%key:common::config_flow::data::password%]",
           "physical_address": "Physical address",
           "port": "[%key:common::config_flow::data::port%]",

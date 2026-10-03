@@ -14,7 +14,7 @@ from typing import Any, Final, cast
 
 from dlms_cosem import a_xdr, cosem
 from dlms_cosem.client import DlmsClient as BlockingDlmsClient
-from dlms_cosem.io import BlockingTcpIO, HdlcTransport, IoImplementation
+from dlms_cosem.io import HdlcTransport, IoImplementation, SerialXIO
 from dlms_cosem.security import (
     AuthenticationMethodManager,
     LowLevelSecurityAuthentication,
@@ -26,7 +26,6 @@ from homeassistant.core import HomeAssistant, callback
 from .const import (
     ATTR_DATA,
     ATTR_EQUIPMENT_ID,
-    CONF_HOST,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
@@ -110,10 +109,9 @@ def async_dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
 class DlmsClient:
     """Represents a DLMS client."""
 
-    _host: str
     _password: bytes
     _physical_address: int
-    _port: int
+    _port: str
     _read_delay: int
     _read_timeout: int = READ_TIMEOUT
     client: BlockingDlmsClient | None
@@ -122,15 +120,13 @@ class DlmsClient:
     def __init__(
         self,
         hass: HomeAssistant,
-        host: str,
+        port: str,
         password: str,
         physical_address: int,
-        port: int,
         read_delay: int,
         read_timeout: int = READ_TIMEOUT,
     ) -> None:
         """Initialize a new async DLMS client."""
-        self._host = host
         self._password = bytes(password, encoding="utf-8")
         self._physical_address = physical_address
         self._port = port
@@ -193,9 +189,7 @@ class DlmsClient:
     @cached_property
     def io(self) -> IoImplementation:
         """Return the IO implementation."""
-        return BlockingTcpIO(
-            host=self._host, port=self._port, timeout=self._read_timeout
-        )
+        return SerialXIO(port_url=self._port, timeout=self._read_timeout)
 
     @cached_property
     def authentication(self) -> AuthenticationMethodManager:
@@ -214,7 +208,6 @@ class DlmsConnection:
         """Initialize a new DLMS/COSEM connection."""
         self.client = DlmsClient(
             hass,
-            host=entry.data[CONF_HOST],
             port=entry.data[CONF_PORT],
             password=entry.data[CONF_PASSWORD],
             physical_address=entry.data[CONF_PHYSICAL_ADDRESS],
@@ -267,7 +260,6 @@ class DlmsConnection:
         """Check DLMS meter connection."""
         client = DlmsClient(
             hass,
-            host=data[CONF_HOST],
             port=data[CONF_PORT],
             password=data[CONF_PASSWORD],
             physical_address=data[CONF_PHYSICAL_ADDRESS],

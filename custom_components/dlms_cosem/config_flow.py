@@ -14,11 +14,11 @@ from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import SerialPortSelector
 import voluptuous as vol
 
 from .const import (
     ATTR_EQUIPMENT_ID,
-    CONF_HOST,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
@@ -27,7 +27,6 @@ from .const import (
     COSEM_LOGICAL_DEVICE_NAME,
     COSEM_SOFTWARE_PACKAGE,
     DEFAULT_PASSWORD,
-    DEFAULT_PORT,
     DEFAULT_READ_DELAY,
     DOMAIN,
 )
@@ -35,8 +34,7 @@ from .dlms_cosem import DlmsClient, DlmsConnection, async_decode_logical_device_
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_HOST): cv.string,
-        vol.Required(CONF_PORT, default=DEFAULT_PORT): cv.port,
+        vol.Required(CONF_PORT): SerialPortSelector(),
         vol.Required(CONF_PHYSICAL_ADDRESS): cv.positive_int,
         vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
         vol.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): vol.All(
@@ -70,7 +68,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for DLMS integration."""
 
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     def __init__(self) -> None:
         """Initialize the config flow."""

@@ -16,7 +16,7 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 import structlog
 
-from .const import CONF_HOST, CONF_READ_DELAY, DEFAULT_READ_DELAY
+from .const import CONF_PORT, CONF_READ_DELAY, DEFAULT_READ_DELAY
 from .coordinator import DlmsCoordinator
 from .dlms_cosem import DlmsConnection
 
@@ -63,7 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
     ) as err:
         await connection.async_close()
         raise ConfigEntryNotReady(
-            f"Timed out while connecting to {connection.entry.data[CONF_HOST]}"
+            f"Timed out while connecting to {connection.entry.data[CONF_PORT]}"
         ) from err
 
     coordinator = DlmsCoordinator(hass, connection)
@@ -109,6 +109,18 @@ async def async_migrate_entry(
 
         hass.config_entries.async_update_entry(
             config_entry, data=new_data, minor_version=2
+        )
+
+    if config_entry.version == 1 and config_entry.minor_version < 3:
+        new_data = {**config_entry.data}
+        if "host" in new_data:
+            host = new_data.pop("host")
+            port = new_data.get(CONF_PORT)
+            if isinstance(port, int):
+                new_data[CONF_PORT] = f"socket://{host}:{port}"
+
+        hass.config_entries.async_update_entry(
+            config_entry, data=new_data, minor_version=3
         )
 
     _LOGGER.debug(
