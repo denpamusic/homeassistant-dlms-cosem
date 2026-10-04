@@ -54,15 +54,6 @@ class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
         await super().async_will_remove_from_hass()
         self.coordinator.async_unregister_attribute(self.entity_description.key)
 
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return (
-            super().available
-            and self.coordinator.data is not None
-            and self.coordinator.data.get(self.entity_description.key) is not None
-        )
-
     @cached_property
     def unique_id(self) -> str:
         """Return the unique ID."""

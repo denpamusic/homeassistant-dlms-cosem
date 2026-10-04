@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any
+from typing import cast
 
 from dlms_cosem import cosem, enumerations
 from homeassistant.components.binary_sensor import (
@@ -12,7 +12,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -48,29 +48,15 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
 
     entity_description: CosemBinarySensorEntityDescription
 
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if the binary sensor is on."""
-        if (
-            self.coordinator.data is not None
-            and (raw := self.coordinator.data.get(self.entity_description.key))
-            is not None
-        ):
-            return bool(self.entity_description.value_fn(raw))
-        return None
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra state attributes."""
-        if (
-            self.entity_description.key == "self_test"
-            and self.is_on
-            and self.coordinator.data is not None
-            and (raw := self.coordinator.data.get(self.entity_description.key))
-            is not None
-        ):
-            return {"error_codes": ", ".join(async_extract_error_codes(raw))}
-        return {}
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        raw_value = self.coordinator.data.get(self.entity_description.key)
+        self._attr_is_on = self.entity_description.value_fn(raw_value)
+        if self.entity_description.key == "self_test":
+            error_codes = async_extract_error_codes(cast(bytes, raw_value))
+            self._attr_extra_state_attributes = {"error_codes": ", ".join(error_codes)}
+        self.async_write_ha_state()
 
 
 async def async_setup_entry(

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any
 
 from dlms_cosem import cosem, enumerations, time
 from homeassistant.components.sensor import (
@@ -23,7 +22,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -363,16 +362,13 @@ class CosemSensor(CosemEntity, SensorEntity):
 
     entity_description: CosemSensorEntityDescription
 
-    @property
-    def native_value(self) -> Any:
-        """Return the state of the sensor."""
-        if (
-            self.coordinator.data is not None
-            and (raw := self.coordinator.data.get(self.entity_description.key))
-            is not None
-        ):
-            return self.entity_description.value_fn(raw)
-        return None
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._attr_native_value = self.entity_description.value_fn(
+            self.coordinator.data.get(self.entity_description.key)
+        )
+        self.async_write_ha_state()
 
 
 async def async_setup_entry(
