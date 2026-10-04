@@ -19,8 +19,11 @@ from .dlms_cosem import DlmsConnection
 
 _LOGGER = logging.getLogger(__name__)
 
-RETRY_AFTER = timedelta(minutes=5)
-
+RETRY_INTERVAL: list[timedelta] = [
+    DEFAULT_SCAN_INTERVAL,
+    timedelta(minutes=1),
+    timedelta(minutes=5),
+]
 
 class TrackedAttribute(NamedTuple):
     """Represents a tracked COSEM attribute."""
@@ -46,6 +49,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.connection = connection
         self._tracked_attributes: dict[str, TrackedAttribute] = {}
         self._last_polled: dict[str, float] = {}
+        self._retry_attempt = 0
 
     @callback
     def async_register_attribute(
@@ -75,15 +79,19 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not self.connection.connected:
             try:
                 await self.connection.async_connect()
+                self._retry_attempt = 0
             except (
                 CommunicationError,
                 LocalDlmsProtocolError,
                 TimeoutError,
                 OSError,
             ) as err:
+                retry_after = RETRY_INTERVALS[self._retry_attempt]
+                if self._retry_attempt < len(RETRY_INTERVALS):
+                    self._retry_attempt += 1
                 raise UpdateFailed(
                     f"Error connecting to DLMS meter: {err}",
-                    retry_after=RETRY_AFTER.total_seconds(),
+                    retry_after=retry_after.total_seconds()
                 ) from err
 
         data: dict[str, Any] = dict(self.data) if self.data else {}
@@ -114,8 +122,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ) as err:
                 await self.connection.async_close()
                 raise UpdateFailed(
-                    f"Communication error while reading {key}: {err}",
-                    retry_after=RETRY_AFTER.total_seconds(),
+                    f"Communication error while reading {key}: {err}"
                 ) from err
 
         return data
