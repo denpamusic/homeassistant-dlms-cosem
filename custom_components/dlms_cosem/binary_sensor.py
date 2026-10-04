@@ -65,7 +65,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
     """Set up the binary sensor platform."""
-    coordinator = entry.runtime_data.coordinator
+    coordinator = entry.runtime_data
     async_add_entities(
         CosemBinarySensor(coordinator, description)
         for description in BINARY_SENSOR_TYPES

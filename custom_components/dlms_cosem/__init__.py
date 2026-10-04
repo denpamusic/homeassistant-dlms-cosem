@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
 
 from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
@@ -23,7 +22,7 @@ DEBUG_LOGGER = structlog.make_filtering_bound_logger(logging.DEBUG)
 
 _LOGGER = logging.getLogger(__name__)
 
-type DlmsCosemConfigEntry = ConfigEntry["DlmsCosemData"]
+type DlmsCosemConfigEntry = ConfigEntry["DlmsCoordinator"]
 
 
 @callback
@@ -31,14 +30,6 @@ def _async_logging_changed(event: Event | None = None) -> None:
     """Handle logging change."""
     logger = DEBUG_LOGGER if _LOGGER.isEnabledFor(logging.DEBUG) else DEFAULT_LOGGER
     structlog.configure(wrapper_class=logger)
-
-
-@dataclass
-class DlmsCosemData:
-    """Represents DLMS/COSEM integration runtime data."""
-
-    connection: DlmsConnection
-    coordinator: DlmsCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) -> bool:
@@ -63,7 +54,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
         ) from err
 
     coordinator = DlmsCoordinator(hass, connection)
-    entry.runtime_data = DlmsCosemData(connection=connection, coordinator=coordinator)
+
+    entry.runtime_data = coordinator
 
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

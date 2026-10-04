@@ -17,6 +17,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SerialPortSelector
 import voluptuous as vol
 
+from . import DlmsCosemConfigEntry
 from .const import (
     ATTR_EQUIPMENT_ID,
     CONF_PASSWORD,
@@ -106,11 +107,11 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle reconfiguring an existing entry."""
         errors: dict[str, str] = {}
-        entry = self._get_reconfigure_entry()
+        entry: DlmsCosemConfigEntry = self._get_reconfigure_entry()
 
         if user_input is not None:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                await entry.runtime_data.coordinator.async_shutdown()
+            coordinator = entry.runtime_data
+            await coordinator.async_shutdown()
 
             try:
                 client = await validate_input(self.hass, user_input)
