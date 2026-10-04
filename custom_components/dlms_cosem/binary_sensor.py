@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from dlms_cosem import cosem, enumerations
 from homeassistant.components.binary_sensor import (
@@ -16,9 +16,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import DlmsCosemConfigEntry
 from .dlms_cosem import async_extract_error_codes
 from .entity import CosemEntity, CosemEntityDescription
+
+if TYPE_CHECKING:
+    from . import DlmsCosemConfigEntry
 
 
 @dataclass(frozen=True, kw_only=True)
