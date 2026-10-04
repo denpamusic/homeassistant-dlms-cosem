@@ -76,8 +76,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
     entry.async_on_unload(
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_close_connection)
     )
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await coordinator.async_config_entry_first_refresh()
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    hass.async_create_background_task(
+        coordinator.async_refresh(), "dlms_cosem-initial-refresh"
+    )
+
     return True
 
 
