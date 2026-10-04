@@ -19,7 +19,7 @@ from .dlms_cosem import DlmsConnection
 
 _LOGGER = logging.getLogger(__name__)
 
-RETRY_AFTER = timedelta(minutes=1)
+RETRY_AFTER = timedelta(minutes=5)
 
 
 class TrackedAttribute(NamedTuple):
@@ -81,7 +81,10 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 TimeoutError,
                 OSError,
             ) as err:
-                raise UpdateFailed(f"Error connecting to DLMS meter: {err}") from err
+                raise UpdateFailed(
+                    f"Error connecting to DLMS meter: {err}",
+                    retry_after=RETRY_AFTER.total_seconds(),
+                ) from err
 
         data: dict[str, Any] = dict(self.data) if self.data else {}
         now = time.monotonic()
