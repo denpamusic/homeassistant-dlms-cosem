@@ -70,6 +70,11 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._tracked_attributes.pop(key, None)
         self._last_polled.pop(key, None)
 
+    async def async_shutdown(self) -> None:
+        """Shutdown the coordinator and close connection."""
+        await super().async_shutdown()
+        await self.connection.async_close()
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from DLMS meter."""
         if not self.connection.connected:
