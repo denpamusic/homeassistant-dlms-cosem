@@ -26,6 +26,15 @@ class CosemEntityDescription(EntityDescription):
     scan_interval: timedelta | None = None
     value_fn: Callable[[Any], Any]
 
+    @cached_property
+    def cosem_attribute(self) -> cosem.CosemAttribute:
+        """Return the COSEM attribute."""
+        return cosem.CosemAttribute(
+            interface=self.interface,
+            instance=self.obis,
+            attribute=self.attribute,
+        )
+
 
 class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
     """Represents the COSEM entity."""
@@ -45,7 +54,7 @@ class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
         await super().async_added_to_hass()
         self.coordinator.async_register_attribute(
             self.entity_description.key,
-            self.cosem_attribute,
+            self.entity_description.cosem_attribute,
             self.entity_description.scan_interval,
         )
 
@@ -58,15 +67,6 @@ class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
     def unique_id(self) -> str:
         """Return the unique ID."""
         return f"{self.coordinator.connection.entry.unique_id}-{self.entity_description.key}"
-
-    @cached_property
-    def cosem_attribute(self) -> cosem.CosemAttribute:
-        """Return the COSEM attribute."""
-        return cosem.CosemAttribute(
-            interface=self.entity_description.interface,
-            instance=self.entity_description.obis,
-            attribute=self.entity_description.attribute,
-        )
 
     @cached_property
     def device_info(self) -> DeviceInfo:
