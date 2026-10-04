@@ -111,7 +111,6 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if hasattr(entry, "runtime_data") and entry.runtime_data:
                 await entry.runtime_data.coordinator.async_shutdown()
-                await entry.runtime_data.connection.async_close()
 
             try:
                 client = await validate_input(self.hass, user_input)

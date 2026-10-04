@@ -7,11 +7,7 @@ import logging
 
 from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    EVENT_HOMEASSISTANT_STOP,
-    EVENT_LOGGING_CHANGED,
-    Platform,
-)
+from homeassistant.const import EVENT_LOGGING_CHANGED, Platform
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 import structlog
@@ -69,13 +65,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
     coordinator = DlmsCoordinator(hass, connection)
     entry.runtime_data = DlmsCosemData(connection=connection, coordinator=coordinator)
 
-    async def _async_close_connection(event: Event | None = None) -> None:
-        """Close DLMS connection on HA Stop."""
-        await connection.async_close()
-
-    entry.async_on_unload(
-        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_close_connection)
-    )
     await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -88,10 +77,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
 
 async def async_unload_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        await entry.runtime_data.connection.async_close()
-
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def async_migrate_entry(

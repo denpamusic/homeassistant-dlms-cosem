@@ -6,7 +6,7 @@ from datetime import timedelta
 import logging
 import random
 import time
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, override
 
 from dlms_cosem import cosem
 from dlms_cosem.client import DataResultError
@@ -119,3 +119,9 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 ) from err
 
         return data
+
+    @override
+    async def async_shutdown(self) -> None:
+        """Shutdown the coordinator."""
+        await super().async_shutdown()
+        await self.connection.async_close()
