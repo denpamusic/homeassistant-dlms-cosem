@@ -54,10 +54,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
         ) from err
 
     coordinator = DlmsCoordinator(hass, connection)
+    await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = coordinator
-
-    await coordinator.async_config_entry_first_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     hass.async_create_background_task(
