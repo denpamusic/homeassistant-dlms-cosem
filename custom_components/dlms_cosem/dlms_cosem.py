@@ -37,6 +37,7 @@ LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 
 READ_TIMEOUT: Final = 10  # seconds
+DISCONNECT_DELAY: Final = 3  # seconds
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
@@ -228,7 +229,9 @@ class DlmsConnection:
 
     async def async_close(self) -> None:
         """Close the connection."""
-        await self.client.async_disconnect()
+        if self.client.connected:
+            await self.client.async_disconnect()
+            await asyncio.sleep(DISCONNECT_DELAY)
 
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the COSEM attribute."""
