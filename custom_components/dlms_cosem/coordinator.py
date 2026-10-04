@@ -19,7 +19,7 @@ from .dlms_cosem import DlmsConnection
 
 _LOGGER = logging.getLogger(__name__)
 
-RETRY_INTERVAL: list[timedelta] = [
+RETRY_INTERVALS: list[timedelta] = [
     DEFAULT_SCAN_INTERVAL,
     timedelta(minutes=1),
     timedelta(minutes=5),
