@@ -9,12 +9,11 @@ from typing import Any, Final, NamedTuple, override
 
 from dlms_cosem import cosem
 from dlms_cosem.client import DataResultError
-from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
-from .dlms_cosem import DlmsConnection, DlmsStatistics
+from .dlms_cosem import CONNECTION_ERRORS, DlmsConnection, DlmsStatistics
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,12 +73,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             await self.connection.async_connect()
             self._retry_attempt = 0
-        except (
-            CommunicationError,
-            LocalDlmsProtocolError,
-            TimeoutError,
-            OSError,
-        ) as err:
+        except CONNECTION_ERRORS as err:
             retry_after = RETRY_INTERVALS[self._retry_attempt]
             if self._retry_attempt < len(RETRY_INTERVALS) - 1:
                 self._retry_attempt += 1
@@ -102,12 +96,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             self._last_polled[key] = now
             return None
-        except (
-            CommunicationError,
-            LocalDlmsProtocolError,
-            TimeoutError,
-            OSError,
-        ) as err:
+        except CONNECTION_ERRORS as err:
             await self.connection.async_close()
             raise UpdateFailed(
                 f"Communication error while reading {key}: {err}"

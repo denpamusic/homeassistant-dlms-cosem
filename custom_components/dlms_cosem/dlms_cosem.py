@@ -18,6 +18,7 @@ from dlms_cosem.client import (
     DlmsClient as BlockingDlmsClient,
     DlmsConnectionSettings,
 )
+from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
 from dlms_cosem.io import HdlcTransport, IoImplementation, SerialXIO
 from dlms_cosem.security import (
     AuthenticationMethodManager,
@@ -42,6 +43,8 @@ LOGICAL_SERVER_ADDRESS: Final = 1
 
 READ_TIMEOUT: Final = 10  # seconds
 DISCONNECT_DELAY: Final = 3  # seconds
+
+CONNECTION_ERRORS = (CommunicationError, LocalDlmsProtocolError, TimeoutError, OSError)
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",

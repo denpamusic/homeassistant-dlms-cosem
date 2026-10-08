@@ -8,7 +8,7 @@ import logging
 from operator import itemgetter
 from typing import Any, Final, cast
 
-from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
+from dlms_cosem.exceptions import CommunicationError
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
@@ -31,7 +31,12 @@ from .const import (
     DEFAULT_READ_DELAY,
     DOMAIN,
 )
-from .dlms_cosem import DlmsClient, DlmsConnection, async_decode_logical_device_name
+from .dlms_cosem import (
+    CONNECTION_ERRORS,
+    DlmsClient,
+    DlmsConnection,
+    async_decode_logical_device_name,
+)
 
 STEP_USER_DATA_SCHEMA = probatio.Schema(
     {
@@ -59,13 +64,8 @@ async def validate_input(
     """
     try:
         client = await DlmsConnection.async_check(hass, data)
-    except (
-        CommunicationError,
-        LocalDlmsProtocolError,
-        TimeoutError,
-        OSError,
-    ) as communication_error:
-        raise CannotConnect from communication_error
+    except CONNECTION_ERRORS as err:
+        raise CannotConnect from err
 
     return client
 

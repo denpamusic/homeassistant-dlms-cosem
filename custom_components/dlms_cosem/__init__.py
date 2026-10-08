@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 
-from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_LOGGING_CHANGED, Platform
 from homeassistant.core import Event, HomeAssistant, callback
@@ -13,7 +12,7 @@ import structlog
 
 from .const import CONF_PORT, CONF_READ_DELAY, DEFAULT_READ_DELAY
 from .coordinator import DlmsCoordinator
-from .dlms_cosem import DlmsConnection
+from .dlms_cosem import CONNECTION_ERRORS, DlmsConnection
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
@@ -42,12 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
 
     try:
         await connection.async_connect()
-    except (
-        CommunicationError,
-        LocalDlmsProtocolError,
-        TimeoutError,
-        OSError,
-    ) as err:
+    except CONNECTION_ERRORS as err:
         await connection.async_close()
         raise ConfigEntryNotReady(
             f"Timed out while connecting to {connection.entry.data[CONF_PORT]}"
