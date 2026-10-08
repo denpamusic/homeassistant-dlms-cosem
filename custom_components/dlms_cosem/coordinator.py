@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
-from .dlms_cosem import DlmsConnection
+from .dlms_cosem import DlmsConnection, DlmsStatistics
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -136,6 +136,11 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             data[key] = await self._async_fetch_attribute(key, tracked, now)
 
         return data
+
+    @property
+    def statistics(self) -> DlmsStatistics:
+        """Return connection statistics."""
+        return self.connection.statistics
 
     @override
     async def async_shutdown(self) -> None:

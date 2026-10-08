@@ -5,14 +5,19 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
+from dataclasses import dataclass
 import datetime as dt
 from functools import cache, cached_property
 import json
 from pathlib import Path
-from typing import Any, Final, cast
+from typing import Any, Final, Literal, cast
 
 from dlms_cosem import a_xdr, cosem
-from dlms_cosem.client import DlmsClient as BlockingDlmsClient, DlmsConnectionSettings
+from dlms_cosem.client import (
+    DataResultError,
+    DlmsClient as BlockingDlmsClient,
+    DlmsConnectionSettings,
+)
 from dlms_cosem.io import HdlcTransport, IoImplementation, SerialXIO
 from dlms_cosem.security import (
     AuthenticationMethodManager,
@@ -47,6 +52,25 @@ A_XDR_DECODER = a_xdr.AXdrDecoder(
         attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
     )
 )
+
+NEVER: Final = "never"
+
+
+@dataclass(slots=True, kw_only=True)
+class DlmsStatistics:
+    """Contains DLMS statistics."""
+
+    requests_count: int = 0
+    successful_reads: int = 0
+    failed_reads: int = 0
+    connection_loss_at: dt.datetime | Literal["never"] = NEVER
+    connection_losses: int = 0
+
+    def reset_transfer_statistics(self) -> None:
+        """Reset transfer statistics."""
+        self.requests_count = 0
+        self.successful_reads = 0
+        self.failed_reads = 0
 
 
 @cache
@@ -113,6 +137,7 @@ class DlmsClient:
     _read_delay: int
     _read_timeout: int = READ_TIMEOUT
     client: BlockingDlmsClient | None
+    statistics: DlmsStatistics
     hass: HomeAssistant
 
     def __init__(
@@ -131,6 +156,7 @@ class DlmsClient:
         self._read_delay = read_delay
         self._read_timeout = read_timeout
         self.client = None
+        self.statistics = DlmsStatistics()
         self.hass = hass
 
     async def async_connect(self) -> None:
@@ -149,6 +175,8 @@ class DlmsClient:
             for job in (self.client.connect, self.client.associate):
                 await self.hass.async_add_executor_job(job)
 
+            self.statistics.reset_transfer_statistics()
+
     async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
         """Get the COSEM attribute and decode it."""
 
@@ -159,13 +187,26 @@ class DlmsClient:
             response = client.get(attribute)
             return A_XDR_DECODER.decode(response)[ATTR_DATA]
 
-        if self.client:
+        if not self.client:
+            return None
+
+        self.statistics.requests_count += 1
+        try:
             async with asyncio.timeout(self._read_timeout):
                 result = await self.hass.async_add_executor_job(
                     _get_cosem_attribute, self.client, attribute
                 )
+            self.statistics.successful_reads += 1
             await asyncio.sleep(self._read_delay / 1000)
             return result
+        except DataResultError:
+            self.statistics.failed_reads += 1
+            raise
+        except Exception:
+            self.statistics.failed_reads += 1
+            self.statistics.connection_losses += 1
+            self.statistics.connection_loss_at = dt.datetime.now(dt.UTC)
+            raise
 
     async def async_disconnect(self) -> None:
         """Close the connection."""
@@ -219,6 +260,11 @@ class DlmsConnection:
     def connected(self) -> bool:
         """Return whether connection is active."""
         return self.client.connected
+
+    @property
+    def statistics(self) -> DlmsStatistics:
+        """Return the connection statistics."""
+        return self.client.statistics
 
     async def async_connect(self) -> None:
         """Initialize the connection."""
