@@ -135,5 +135,16 @@
         "name": "Voltage L3"
       }
     }
+  },
+  "system_health": {
+    "info": {
+      "connected": "Connected",
+      "connection_loss_at": "Last connection loss",
+      "connection_losses": "Connection losses",
+      "dlms_state": "DLMS state",
+      "failed_reads": "Failed reads",
+      "requests_count": "Total requests",
+      "successful_reads": "Successful reads"
+    }
   }
 }

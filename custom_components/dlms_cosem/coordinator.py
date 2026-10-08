@@ -138,6 +138,11 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return data
 
     @property
+    def dlms_state(self) -> str:
+        """Return the current DLMS association state."""
+        return self.connection.dlms_state
+
+    @property
     def statistics(self) -> DlmsStatistics:
         """Return connection statistics."""
         return self.connection.statistics

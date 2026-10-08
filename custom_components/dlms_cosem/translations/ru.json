@@ -135,5 +135,16 @@
         "name": "Напряжение L3"
       }
     }
+  },
+  "system_health": {
+    "info": {
+      "connected": "Подключено",
+      "connection_loss_at": "Последний обрыв связи",
+      "connection_losses": "Обрывы связи",
+      "dlms_state": "Состояние DLMS",
+      "failed_reads": "Неудачные чтения",
+      "requests_count": "Всего запросов",
+      "successful_reads": "Успешные чтения"
+    }
   }
 }

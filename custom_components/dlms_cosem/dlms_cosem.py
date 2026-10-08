@@ -226,6 +226,13 @@ class DlmsClient:
         """Return whether client is connected."""
         return self.client is not None
 
+    @property
+    def dlms_state(self) -> str:
+        """Return the current DLMS association state."""
+        if self.client:
+            return str(self.client.dlms_connection.state.current_state).lower()
+        return "disconnected"
+
     @cached_property
     def io(self) -> IoImplementation:
         """Return the IO implementation."""
@@ -260,6 +267,11 @@ class DlmsConnection:
     def connected(self) -> bool:
         """Return whether connection is active."""
         return self.client.connected
+
+    @property
+    def dlms_state(self) -> str:
+        """Return the current DLMS association state."""
+        return self.client.dlms_state
 
     @property
     def statistics(self) -> DlmsStatistics:
