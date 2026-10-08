@@ -59,8 +59,13 @@ async def validate_input(
     """
     try:
         client = await DlmsConnection.async_check(hass, data)
-    except (CommunicationError, LocalDlmsProtocolError) as communtication_error:
-        raise CannotConnect from communtication_error
+    except (
+        CommunicationError,
+        LocalDlmsProtocolError,
+        TimeoutError,
+        OSError,
+    ) as communication_error:
+        raise CannotConnect from communication_error
 
     return client
 
