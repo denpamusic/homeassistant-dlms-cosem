@@ -8,7 +8,6 @@ from contextlib import suppress
 import datetime as dt
 from functools import cache, cached_property
 import json
-import logging
 from pathlib import Path
 from typing import Any, Final, cast
 
@@ -48,8 +47,6 @@ A_XDR_DECODER = a_xdr.AXdrDecoder(
         attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
     )
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 @cache
