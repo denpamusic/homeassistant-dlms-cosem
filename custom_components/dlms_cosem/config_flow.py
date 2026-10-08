@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SerialPortSelector
-import voluptuous as vol
+import probatio
 
 from . import DlmsCosemConfigEntry
 from .const import (
@@ -33,13 +33,13 @@ from .const import (
 )
 from .dlms_cosem import DlmsClient, DlmsConnection, async_decode_logical_device_name
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
+STEP_USER_DATA_SCHEMA = probatio.Schema(
     {
-        vol.Required(CONF_PORT): SerialPortSelector(),
-        vol.Required(CONF_PHYSICAL_ADDRESS): cv.positive_int,
-        vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
-        vol.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): vol.All(
-            vol.Coerce(int), vol.Range(min=50, max=500)
+        probatio.Required(CONF_PORT): SerialPortSelector(),
+        probatio.Required(CONF_PHYSICAL_ADDRESS): cv.positive_int,
+        probatio.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
+        probatio.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): probatio.All(
+            probatio.Coerce(int), probatio.Range(min=50, max=500)
         ),
     }
 )
