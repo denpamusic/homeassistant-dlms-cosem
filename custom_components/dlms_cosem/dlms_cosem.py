@@ -19,7 +19,7 @@ from dlms_cosem.client import (
     DlmsConnectionSettings,
 )
 from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
-from dlms_cosem.io import HdlcTransport, IoImplementation, SerialXIO
+from dlms_cosem.io import HdlcTransport, SerialXIO
 from dlms_cosem.security import (
     AuthenticationMethodManager,
     LowLevelSecurityAuthentication,
@@ -171,7 +171,7 @@ class DlmsClient:
                     client_logical_address=LOGICAL_CLIENT_ADDRESS,
                     server_logical_address=LOGICAL_SERVER_ADDRESS,
                     server_physical_address=self._physical_address,
-                    io=self.io,
+                    io=SerialXIO(port_url=self._port, timeout=self._read_timeout),
                 ),
                 authentication=self.authentication,
                 connection_settings=DlmsConnectionSettings(use_rlrq_rlre=False),
@@ -221,7 +221,6 @@ class DlmsClient:
                         await self.hass.async_add_executor_job(job)
 
             self.client = None
-            del self.io
 
     @property
     def connected(self) -> bool:
@@ -234,11 +233,6 @@ class DlmsClient:
         if self.client:
             return str(self.client.dlms_connection.state.current_state).lower()
         return "disconnected"
-
-    @cached_property
-    def io(self) -> IoImplementation:
-        """Return the IO implementation."""
-        return SerialXIO(port_url=self._port, timeout=self._read_timeout)
 
     @cached_property
     def authentication(self) -> AuthenticationMethodManager:
