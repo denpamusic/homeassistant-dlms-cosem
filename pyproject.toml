@@ -49,7 +49,9 @@ exclude = [
     ".pytest_cache",
     ".ruff_cache",
     ".tox",
-    ".vscode"
+    ".vscode",
+    "config",
+    "dlms-cosem"
 ]
 
 [tool.ruff]
@@ -60,7 +62,9 @@ exclude = [
     ".pytest_cache",
     ".ruff_cache",
     ".tox",
-    ".vscode"
+    ".vscode",
+    "config",
+    "dlms-cosem"
 ]
 line-length = 88
 indent-width = 4
@@ -184,7 +188,18 @@ split-on-trailing-comma = false
 [tool.ruff.lint.mccabe]
 max-complexity = 25
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [".git", "config", "dlms-cosem"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["custom_components/dlms_cosem"]
+branch = true
+
 [tool.coverage.report]
+fail_under = 90
+show_missing = true
 exclude_lines = [
     "if TYPE_CHECKING:",
     "@overload"
@@ -193,7 +208,7 @@ exclude_lines = [
 [tool.tox]
 legacy_tox_ini = """
     [tox]
-    envlist = lint, type
+    envlist = lint, test, coverage, type
     isolated_build = True
     skip_missing_interpreters = True
     ignore_basepython_conflict = True
@@ -201,7 +216,7 @@ legacy_tox_ini = """
 
     [gh-actions]
     python =
-        3.14: lint, type
+        3.14: lint, test, coverage, type
 
     [testenv:lint]
     deps =
@@ -221,11 +236,20 @@ legacy_tox_ini = """
     commands =
         pytest
 
+    [testenv:coverage]
+    deps =
+        -r{toxinidir}/requirements.txt
+        -r{toxinidir}/requirements_test.txt
+
+    commands =
+        coverage run -m pytest
+        coverage report --fail-under=90
+
     [testenv:type]
     deps =
         -r{toxinidir}/requirements.txt
         -r{toxinidir}/requirements_test.txt
 
     commands =
-        mypy .
+        mypy custom_components/dlms_cosem tests
 """

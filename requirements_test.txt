@@ -1,6 +1,10 @@
+aiousbwatcher==1.1.2
 codespell==2.4.3
+coverage==7.16.2
 mypy==2.4.0
 prek==0.5.4
+pytest-cov==7.1.0
+pytest-homeassistant-custom-component==0.13.371
 ruff==0.16.10
 tomli==2.4.1
 tox==4.64.7
