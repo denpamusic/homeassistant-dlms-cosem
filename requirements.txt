@@ -1,2 +1,2 @@
 git+https://github.com/denpaforks/dlms-cosem.git@feature/serialx-io#dlms-cosem==2026.1.0
-homeassistant>=2024.6.0
+homeassistant>=2026.9.4
