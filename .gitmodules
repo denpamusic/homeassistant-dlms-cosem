@@ -1,0 +1,3 @@
+[submodule "dlms-cosem"]
+	path = dlms-cosem
+	url = https://github.com/denpaforks/dlms-cosem
