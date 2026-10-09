@@ -43,6 +43,7 @@ LOGICAL_SERVER_ADDRESS: Final = 1
 
 READ_TIMEOUT: Final = 10  # seconds
 DISCONNECT_DELAY: Final = 3  # seconds
+DISCONNECT_TIMEOUT: Final = 5  # seconds
 
 CONNECTION_ERRORS = (CommunicationError, LocalDlmsProtocolError, TimeoutError, OSError)
 
@@ -214,15 +215,13 @@ class DlmsClient:
     async def async_disconnect(self) -> None:
         """Close the connection."""
         if self.client:
-            for job in (
-                self.client.release_association,
-                self.client.disconnect,
-                self.client.transport.io.disconnect,
-            ):
+            for job in (self.client.release_association, self.client.disconnect):
                 with suppress(Exception):
-                    await self.hass.async_add_executor_job(job)
+                    async with asyncio.timeout(DISCONNECT_TIMEOUT):
+                        await self.hass.async_add_executor_job(job)
 
             self.client = None
+            del self.io
 
     @property
     def connected(self) -> bool:
