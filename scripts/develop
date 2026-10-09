@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Create config directory structure
+mkdir -p config/custom_components
+
+# Link custom_components/dlms_cosem to config/custom_components/dlms_cosem
+ln -sfn "${PWD}/custom_components/dlms_cosem" "${PWD}/config/custom_components/dlms_cosem"
+
+# Ensure default configuration.yaml exists with debug logging for DLMS/COSEM
+if [ ! -f config/configuration.yaml ]; then
+    cat << 'EOF' > config/configuration.yaml
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.dlms_cosem: debug
+    dlms_cosem: debug
+EOF
+fi
+
+# Run Home Assistant Core with config directory
+hass -c config
+

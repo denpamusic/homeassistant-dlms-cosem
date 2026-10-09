@@ -1,0 +1,67 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Prepare Home Assistant config",
+            "type": "shell",
+            "command": "mkdir -p config/custom_components && ln -sfn \"${workspaceFolder}/custom_components/dlms_cosem\" \"${workspaceFolder}/config/custom_components/dlms_cosem\"",
+            "presentation": {
+                "reveal": "never",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Run Home Assistant Core",
+            "type": "shell",
+            "command": "bash scripts/develop",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Run Tests (pytest)",
+            "type": "shell",
+            "command": "pytest",
+            "group": "test",
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Run Tox",
+            "type": "shell",
+            "command": "tox",
+            "group": "test",
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Run Lint (prek)",
+            "type": "shell",
+            "command": "prek run --all-files",
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Run Type Check (mypy)",
+            "type": "shell",
+            "command": "mypy .",
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Sync Translations",
+            "type": "shell",
+            "command": "python scripts/sync_translations.py",
+            "presentation": {
+                "reveal": "always"
+            }
+        }
+    ]
+}
+

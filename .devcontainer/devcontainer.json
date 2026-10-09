@@ -1,0 +1,59 @@
+{
+    "name": "DLMS/COSEM (Home Assistant)",
+    "image": "mcr.microsoft.com/devcontainers/python:3.14-bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+    "forwardPorts": [
+        8123
+    ],
+    "portsAttributes": {
+        "8123": {
+            "label": "Home Assistant",
+            "onAutoForward": "notify"
+        }
+    },
+    "runArgs": [
+        "-e",
+        "GIT_EDITOR=code --wait"
+    ],
+    "postCreateCommand": "bash scripts/setup",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "charliermarsh.ruff",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.debugpy",
+                "redhat.vscode-yaml",
+                "esbenp.prettier-vscode",
+                "GitHub.vscode-pull-request-github"
+            ],
+            "settings": {
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestEnabled": true,
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": "explicit"
+                },
+                "editor.rulers": [
+                    72,
+                    88
+                ],
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.tabSize": 4
+                },
+                "[json]": {
+                    "editor.tabSize": 2
+                },
+                "files.associations": {
+                    "*.yaml": "home-assistant"
+                },
+                "json.format.keepLines": true,
+                "python.defaultInterpreterPath": "/usr/local/bin/python"
+            }
+        }
+    }
+}
+
