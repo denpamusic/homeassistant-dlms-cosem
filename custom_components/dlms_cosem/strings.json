@@ -144,7 +144,9 @@
       "dlms_state": "DLMS state",
       "failed_reads": "Failed reads",
       "requests_count": "Total requests",
-      "successful_reads": "Successful reads"
+      "slow_attributes": "Slow attributes",
+      "successful_reads": "Successful reads",
+      "tracked_attributes": "Tracked attributes"
     }
   }
 }

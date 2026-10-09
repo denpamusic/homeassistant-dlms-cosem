@@ -132,6 +132,20 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self.connection.dlms_state
 
     @property
+    def tracked_attributes_count(self) -> int:
+        """Return the number of tracked COSEM attributes."""
+        return len(self._tracked_attributes)
+
+    @property
+    def slow_attributes_count(self) -> int:
+        """Return the number of slow COSEM attributes."""
+        return sum(
+            tracked.scan_interval is not None
+            and tracked.scan_interval >= DEFAULT_SCAN_INTERVAL
+            for tracked in self._tracked_attributes.values()
+        )
+
+    @property
     def statistics(self) -> DlmsStatistics:
         """Return connection statistics."""
         return self.connection.statistics

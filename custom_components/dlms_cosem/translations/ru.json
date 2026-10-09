@@ -144,7 +144,9 @@
       "dlms_state": "Состояние DLMS",
       "failed_reads": "Неудачные чтения",
       "requests_count": "Всего запросов",
-      "successful_reads": "Успешные чтения"
+      "slow_attributes": "Медленные атрибуты",
+      "successful_reads": "Успешные чтения",
+      "tracked_attributes": "Отслеживаемые атрибуты"
     }
   }
 }

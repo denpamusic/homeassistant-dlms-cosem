@@ -28,6 +28,8 @@ def _get_entry_info(entry: DlmsCosemConfigEntry) -> dict[str, Any]:
     return {
         "connected": coordinator.connection.connected,
         "dlms_state": coordinator.dlms_state,
+        "tracked_attributes": coordinator.tracked_attributes_count,
+        "slow_attributes": coordinator.slow_attributes_count,
         "requests_count": stats.requests_count,
         "successful_reads": stats.successful_reads,
         "failed_reads": stats.failed_reads,
