@@ -19,8 +19,8 @@ _LOGGER = logging.getLogger(__name__)
 
 MAX_SLOW_ATTRIBUTES_PER_POLL: Final = 2
 
-RETRY_INTERVALS: Final[list[timedelta]] = [
-    DEFAULT_SCAN_INTERVAL,
+RETRY_INTERVALS: Final = [
+    timedelta(seconds=30),
     timedelta(minutes=1),
     timedelta(minutes=5),
 ]
