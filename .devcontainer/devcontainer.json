@@ -54,9 +54,6 @@
                 "python.defaultInterpreterPath": "/usr/local/bin/python"
             }
         }
-    },
-    "mounts": [
-        "source=${localEnv:HOME}/.gnupg,target=/home/vscode/.gnupg,type=bind"
-    ]
+    }
 }
 
