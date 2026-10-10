@@ -12,7 +12,12 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.dlms_cosem.const import COSEM_EQUIPMENT_ID, DEFAULT_MODEL
+from custom_components.dlms_cosem.const import (
+    COSEM_EQUIPMENT_ID,
+    DEFAULT_MODEL,
+    DEFAULT_RETRIES,
+    DEFAULT_RETRY_DELAY,
+)
 from custom_components.dlms_cosem.dlms_cosem import (
     NEVER,
     DlmsClient,
@@ -258,3 +263,41 @@ async def test_dlms_connection_async_check(hass: HomeAssistant) -> None:
         client = await DlmsConnection.async_check(hass, dict(MOCK_CONFIG_DATA))
         assert isinstance(client, DlmsClient)
         mock_connect.assert_awaited_once()
+
+
+async def test_dlms_client_retries_and_timeout(hass: HomeAssistant) -> None:
+    """Test DlmsClient retries configuration and async_get total timeout calculation."""
+    client = DlmsClient(
+        hass=hass,
+        port="/dev/ttyUSB0",
+        password="password",
+        physical_address=1,
+        read_delay=10,
+        read_timeout=5,
+        retries=2,
+        retry_delay=0.5,
+    )
+    assert client._retries == 2
+    assert client._retry_delay == 0.5
+
+    # Check defaults
+    client_default = DlmsClient(
+        hass=hass,
+        port="/dev/ttyUSB0",
+        password="password",
+        physical_address=1,
+        read_delay=10,
+    )
+    assert client_default._retries == DEFAULT_RETRIES
+    assert client_default._retry_delay == DEFAULT_RETRY_DELAY
+
+    mock_blocking = MagicMock()
+    mock_blocking.get = MagicMock(return_value=b"\x06\x00\x00\x00\x01")
+    client.client = mock_blocking
+
+    with patch("asyncio.timeout") as mock_timeout:
+        mock_timeout.return_value.__aenter__ = AsyncMock()
+        mock_timeout.return_value.__aexit__ = AsyncMock()
+        await client.async_get(COSEM_EQUIPMENT_ID)
+        # Expected total_timeout: 5 * (2 + 1) + (0.5 * 2) + 2 = 15 + 1.0 + 2 = 18.0
+        mock_timeout.assert_called_once_with(18.0)

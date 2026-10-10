@@ -36,6 +36,8 @@ from .const import (
     CONF_PORT,
     CONF_READ_DELAY,
     DEFAULT_MODEL,
+    DEFAULT_RETRIES,
+    DEFAULT_RETRY_DELAY,
 )
 
 LOGICAL_CLIENT_ADDRESS: Final = 32
@@ -140,6 +142,8 @@ class DlmsClient:
     _port: str
     _read_delay: int
     _read_timeout: int = READ_TIMEOUT
+    _retries: int = DEFAULT_RETRIES
+    _retry_delay: float = DEFAULT_RETRY_DELAY
     client: BlockingDlmsClient | None
     statistics: DlmsStatistics
     hass: HomeAssistant
@@ -152,6 +156,8 @@ class DlmsClient:
         physical_address: int,
         read_delay: int,
         read_timeout: int = READ_TIMEOUT,
+        retries: int = DEFAULT_RETRIES,
+        retry_delay: float = DEFAULT_RETRY_DELAY,
     ) -> None:
         """Initialize a new async DLMS client."""
         self._password = bytes(password, encoding="utf-8")
@@ -159,6 +165,8 @@ class DlmsClient:
         self._port = port
         self._read_delay = read_delay
         self._read_timeout = read_timeout
+        self._retries = retries
+        self._retry_delay = retry_delay
         self.client = None
         self.statistics = DlmsStatistics()
         self.hass = hass
@@ -172,6 +180,8 @@ class DlmsClient:
                     server_logical_address=LOGICAL_SERVER_ADDRESS,
                     server_physical_address=self._physical_address,
                     io=SerialXIO(port_url=self._port, timeout=self._read_timeout),
+                    retries=self._retries,
+                    retry_delay=self._retry_delay,
                 ),
                 authentication=self.authentication,
                 connection_settings=DlmsConnectionSettings(use_rlrq_rlre=False),
@@ -195,8 +205,13 @@ class DlmsClient:
             return None
 
         self.statistics.requests_count += 1
+        total_timeout = (
+            self._read_timeout * (self._retries + 1)
+            + (self._retry_delay * self._retries)
+            + 2
+        )
         try:
-            async with asyncio.timeout(self._read_timeout):
+            async with asyncio.timeout(total_timeout):
                 result = await self.hass.async_add_executor_job(
                     _get_cosem_attribute, self.client, attribute
                 )

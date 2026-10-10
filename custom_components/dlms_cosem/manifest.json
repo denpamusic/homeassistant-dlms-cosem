@@ -19,7 +19,7 @@
     "dlms_cosem"
   ],
   "requirements": [
-    "dlms-cosem@git+https://github.com/denpaforks/dlms-cosem.git@master"
+    "dlms-cosem@git+https://github.com/denpaforks/dlms-cosem.git@feature/request-retries"
   ],
   "version": "0.2.0"
 }

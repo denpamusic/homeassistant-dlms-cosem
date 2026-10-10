@@ -24,6 +24,8 @@ DEFAULT_ATTRIBUTE: Final = 2
 DEFAULT_MODEL: Final = "Smart meter"
 DEFAULT_PASSWORD: Final = "111111"
 DEFAULT_READ_DELAY: Final = 250  # milliseconds
+DEFAULT_RETRIES: Final = 3
+DEFAULT_RETRY_DELAY: Final = 0.5  # seconds
 DEFAULT_SCAN_INTERVAL: Final = timedelta(seconds=30)
 
 # COSEM attributes
