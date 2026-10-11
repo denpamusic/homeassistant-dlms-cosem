@@ -1,2 +1,2 @@
-microdlms==0.1.0
+microdlms==0.1.1
 homeassistant>=2026.9.4

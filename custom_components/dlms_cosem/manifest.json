@@ -19,7 +19,7 @@
     "microdlms"
   ],
   "requirements": [
-    "microdlms==0.1.0"
+    "microdlms==0.1.1"
   ],
   "version": "0.2.0"
 }
