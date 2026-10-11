@@ -12,6 +12,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.dlms_cosem.config_flow import CannotConnect, validate_input
 from custom_components.dlms_cosem.const import (
+    CONF_ECHO_FILTER,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
@@ -323,6 +324,7 @@ async def test_flow_reconfigure_success(
         CONF_PASSWORD: "new_password",
         CONF_PHYSICAL_ADDRESS: 2,
         CONF_READ_DELAY: 300,
+        CONF_ECHO_FILTER: True,
     }
 
     with patch(
@@ -340,4 +342,5 @@ async def test_flow_reconfigure_success(
     assert mock_config_entry.data[CONF_PASSWORD] == "new_password"
     assert mock_config_entry.data[CONF_PHYSICAL_ADDRESS] == 2
     assert mock_config_entry.data[CONF_READ_DELAY] == 300
+    assert mock_config_entry.data[CONF_ECHO_FILTER] is True
     mock_flow_client.async_disconnect.assert_awaited()

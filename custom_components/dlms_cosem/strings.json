@@ -16,6 +16,7 @@
     "step": {
       "reconfigure": {
         "data": {
+          "echo_filter": "Echo filter",
           "password": "[%key:common::config_flow::data::password%]",
           "physical_address": "Physical address",
           "port": "[%key:common::config_flow::data::port%]",
@@ -24,6 +25,7 @@
       },
       "user": {
         "data": {
+          "echo_filter": "Echo filter",
           "password": "[%key:common::config_flow::data::password%]",
           "physical_address": "Physical address",
           "port": "[%key:common::config_flow::data::port%]",

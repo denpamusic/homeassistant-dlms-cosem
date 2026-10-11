@@ -21,6 +21,7 @@ from microdlms import CommunicationError
 from . import DlmsCosemConfigEntry
 from .const import (
     ATTR_EQUIPMENT_ID,
+    CONF_ECHO_FILTER,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
@@ -28,6 +29,7 @@ from .const import (
     COSEM_EQUIPMENT_ID,
     COSEM_LOGICAL_DEVICE_NAME,
     COSEM_SOFTWARE_PACKAGE,
+    DEFAULT_ECHO_FILTER,
     DEFAULT_PASSWORD,
     DEFAULT_READ_DELAY,
     DOMAIN,
@@ -47,6 +49,7 @@ STEP_USER_DATA_SCHEMA = probatio.Schema(
         probatio.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): probatio.All(
             probatio.Coerce(int), probatio.Range(min=50, max=500)
         ),
+        probatio.Optional(CONF_ECHO_FILTER, default=DEFAULT_ECHO_FILTER): cv.boolean,
     }
 )
 

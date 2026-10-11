@@ -13,6 +13,7 @@ DOMAIN: Final = "dlms_cosem"
 ATTR_EQUIPMENT_ID: Final = "equipment_id"
 
 # Configuration
+CONF_ECHO_FILTER: Final = "echo_filter"
 CONF_PASSWORD: Final = "password"
 CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 CONF_PORT: Final = "port"
@@ -20,6 +21,7 @@ CONF_READ_DELAY: Final = "read_delay"
 
 # Defaults
 DEFAULT_ATTRIBUTE: Final = 2
+DEFAULT_ECHO_FILTER: Final = False
 DEFAULT_MODEL: Final = "Smart meter"
 DEFAULT_PASSWORD: Final = "111111"
 DEFAULT_READ_DELAY: Final = 250  # milliseconds

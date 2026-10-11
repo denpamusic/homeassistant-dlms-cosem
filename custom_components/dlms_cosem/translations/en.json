@@ -16,6 +16,7 @@
     "step": {
       "reconfigure": {
         "data": {
+          "echo_filter": "Echo filter",
           "password": "Password",
           "physical_address": "Physical address",
           "port": "Port",
@@ -24,6 +25,7 @@
       },
       "user": {
         "data": {
+          "echo_filter": "Echo filter",
           "password": "Password",
           "physical_address": "Physical address",
           "port": "Port",

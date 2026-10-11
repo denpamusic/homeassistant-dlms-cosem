@@ -27,10 +27,12 @@ from microdlms import (
 
 from .const import (
     ATTR_EQUIPMENT_ID,
+    CONF_ECHO_FILTER,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
+    DEFAULT_ECHO_FILTER,
     DEFAULT_MODEL,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
@@ -124,6 +126,7 @@ def parse_dlms_datetime(data: bytes | None) -> dt.datetime | None:
 class DlmsClient:
     """Represents a DLMS client."""
 
+    _echo_filter: bool
     _password: str
     _physical_address: int
     _port: str
@@ -145,8 +148,10 @@ class DlmsClient:
         read_timeout: int = READ_TIMEOUT,
         retries: int = DEFAULT_RETRIES,
         retry_delay: float = DEFAULT_RETRY_DELAY,
+        echo_filter: bool = False,
     ) -> None:
         """Initialize a new async DLMS client."""
+        self._echo_filter = echo_filter
         self._password = password
         self._physical_address = physical_address
         self._port = port
@@ -168,6 +173,7 @@ class DlmsClient:
                 timeout=self._read_timeout,
                 retries=self._retries,
                 retry_delay=self._retry_delay,
+                echo_filter=self._echo_filter,
             )
             await self.client.connect()
             self.statistics.reset_transfer_statistics()
@@ -234,6 +240,7 @@ class DlmsConnection:
             password=entry.data[CONF_PASSWORD],
             physical_address=entry.data[CONF_PHYSICAL_ADDRESS],
             read_delay=entry.data[CONF_READ_DELAY],
+            echo_filter=entry.data.get(CONF_ECHO_FILTER, DEFAULT_ECHO_FILTER),
         )
         self.entry = entry
         self.hass = hass
@@ -298,6 +305,7 @@ class DlmsConnection:
             password=data[CONF_PASSWORD],
             physical_address=data[CONF_PHYSICAL_ADDRESS],
             read_delay=data[CONF_READ_DELAY],
+            echo_filter=data.get(CONF_ECHO_FILTER, DEFAULT_ECHO_FILTER),
         )
         await client.async_connect()
         return client

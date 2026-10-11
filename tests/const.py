@@ -8,6 +8,7 @@ from typing import Any, Final
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 
 from custom_components.dlms_cosem.const import (
+    CONF_ECHO_FILTER,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
@@ -24,6 +25,7 @@ MOCK_CONFIG_DATA: Final[dict[str, Any]] = {
     CONF_PASSWORD: "111111",
     CONF_PHYSICAL_ADDRESS: 1,
     CONF_READ_DELAY: 250,
+    CONF_ECHO_FILTER: False,
 }
 
 MOCK_DEVICE_DATA: Final[dict[str, Any]] = {

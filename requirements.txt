@@ -1,2 +1,2 @@
-microdlms==0.1.0
+git+https://github.com/denpavibes/microdlms.git@feature/optical-echo-filter#microdlms==0.1.0
 homeassistant>=2026.9.4

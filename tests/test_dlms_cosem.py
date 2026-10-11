@@ -309,3 +309,35 @@ async def test_dlms_client_retries_and_timeout(hass: HomeAssistant) -> None:
         await client.async_get(COSEM_EQUIPMENT_ID)
         # Expected total_timeout: 5 * (2 + 1) + (0.5 * 2) + 2 = 15 + 1.0 + 2 = 18.0
         mock_timeout.assert_called_once_with(18.0)
+
+
+async def test_dlms_client_echo_filter(hass: HomeAssistant) -> None:
+    """Test DlmsClient passes echo_filter to AsyncMeterClient."""
+    client = DlmsClient(
+        hass=hass,
+        port="/dev/ttyUSB0",
+        password="password",
+        physical_address=1,
+        read_delay=10,
+        echo_filter=True,
+    )
+    assert client._echo_filter is True
+
+    with patch(
+        "custom_components.dlms_cosem.dlms_cosem.AsyncMeterClient"
+    ) as mock_meter_client:
+        mock_instance = MagicMock()
+        mock_instance.connect = AsyncMock()
+        mock_instance.session.state.name = "ASSOCIATED"
+        mock_meter_client.return_value = mock_instance
+
+        await client.async_connect()
+        mock_meter_client.assert_called_once_with(
+            port="/dev/ttyUSB0",
+            password="password",
+            server_physical_address=1,
+            timeout=10,
+            retries=DEFAULT_RETRIES,
+            retry_delay=DEFAULT_RETRY_DELAY,
+            echo_filter=True,
+        )

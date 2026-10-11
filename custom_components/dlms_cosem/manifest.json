@@ -19,7 +19,7 @@
     "microdlms"
   ],
   "requirements": [
-    "microdlms==0.1.0"
+    "microdlms@git+https://github.com/denpavibes/microdlms.git@feature/optical-echo-filter"
   ],
   "version": "0.2.0"
 }
