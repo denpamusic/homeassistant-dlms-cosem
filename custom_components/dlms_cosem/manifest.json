@@ -19,7 +19,7 @@
     "microdlms"
   ],
   "requirements": [
-    "microdlms@git+https://github.com/denpavibes/microdlms.git"
+    "microdlms==0.1.0"
   ],
   "version": "0.2.0"
 }

@@ -1,2 +1,2 @@
-git+https://github.com/denpavibes/microdlms.git#microdlms==0.1.0
+microdlms==0.1.0
 homeassistant>=2026.9.4
