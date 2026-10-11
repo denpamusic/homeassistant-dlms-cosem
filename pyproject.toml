@@ -51,7 +51,7 @@ exclude = [
     ".tox",
     ".vscode",
     "config",
-    "dlms-cosem"
+    "microdlms"
 ]
 
 [tool.ruff]
@@ -64,7 +64,7 @@ exclude = [
     ".tox",
     ".vscode",
     "config",
-    "dlms-cosem"
+    "microdlms"
 ]
 line-length = 88
 indent-width = 4
@@ -190,7 +190,7 @@ max-complexity = 25
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = [".git", "config", "dlms-cosem"]
+norecursedirs = [".git", "config", "microdlms"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]

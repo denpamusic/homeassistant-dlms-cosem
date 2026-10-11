@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from dlms_cosem.exceptions import CommunicationError
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -23,6 +22,7 @@ from custom_components.dlms_cosem.const import (
     DOMAIN,
 )
 from custom_components.dlms_cosem.dlms_cosem import DlmsClient
+from microdlms import CommunicationError
 
 from .const import MOCK_CONFIG_DATA, MOCK_ENTRY_DATA
 

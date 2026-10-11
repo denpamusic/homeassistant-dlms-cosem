@@ -8,7 +8,6 @@ import logging
 from operator import itemgetter
 from typing import Any, Final, cast
 
-from dlms_cosem.exceptions import CommunicationError
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
@@ -16,6 +15,8 @@ from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SerialPortSelector
 import probatio
+
+from microdlms import CommunicationError
 
 from . import DlmsCosemConfigEntry
 from .const import (
@@ -202,9 +203,14 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_identify_device(self) -> None:
         """Identify the device."""
         client = cast(DlmsClient, self.client)
-        logical_device_name: bytes = await client.async_get(COSEM_LOGICAL_DEVICE_NAME)
+        raw_device_name = await client.async_get(COSEM_LOGICAL_DEVICE_NAME)
+        logical_device_name = (
+            raw_device_name.decode(encoding="utf-8")
+            if isinstance(raw_device_name, bytes)
+            else str(raw_device_name)
+        )
         manufacturer, model = await async_decode_logical_device_name(
-            self.hass, logical_device_name.decode(encoding="utf-8")
+            self.hass, logical_device_name
         )
         equipment_id = await client.async_get(COSEM_EQUIPMENT_ID)
         sw_version = await client.async_get(COSEM_SOFTWARE_PACKAGE)

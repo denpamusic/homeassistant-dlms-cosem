@@ -12,24 +12,20 @@ import json
 from pathlib import Path
 from typing import Any, Final, Literal, cast
 
-from dlms_cosem import a_xdr, cosem
-from dlms_cosem.client import (
-    DataResultError,
-    DlmsClient as BlockingDlmsClient,
-    DlmsConnectionSettings,
-)
-from dlms_cosem.exceptions import CommunicationError, LocalDlmsProtocolError
-from dlms_cosem.io import HdlcTransport, SerialXIO
-from dlms_cosem.security import (
-    AuthenticationMethodManager,
-    LowLevelSecurityAuthentication,
-)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant, callback
 
+from microdlms import (
+    AsyncMeterClient,
+    CommunicationError,
+    CosemAttribute,
+    CosemDateTime,
+    DataAccessError,
+    ProtocolError,
+)
+
 from .const import (
-    ATTR_DATA,
     ATTR_EQUIPMENT_ID,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
@@ -47,17 +43,11 @@ READ_TIMEOUT: Final = 10  # seconds
 DISCONNECT_DELAY: Final = 3  # seconds
 DISCONNECT_TIMEOUT: Final = 5  # seconds
 
-CONNECTION_ERRORS = (CommunicationError, LocalDlmsProtocolError, TimeoutError, OSError)
+CONNECTION_ERRORS = (CommunicationError, ProtocolError, TimeoutError, OSError)
 
 LOGICAL_DEVICE_NAME_FORMATTER: dict[str, Callable[[str], str]] = {
     "INC": lambda x: f"Mercury {x[3:6]}",
 }
-
-A_XDR_DECODER = a_xdr.AXdrDecoder(
-    encoding_conf=a_xdr.EncodingConf(
-        attributes=[a_xdr.Sequence(attribute_name=ATTR_DATA)]
-    )
-)
 
 NEVER: Final = "never"
 
@@ -124,27 +114,24 @@ def async_extract_error_codes(error_code: bytes, prefix: str = "E-") -> list[str
 
 
 @callback
-def async_dlms_datetime_to_ha_datetime(dattim: dt.datetime) -> dt.datetime:
-    """Convert timezone between DLMS and HA."""
-    utcoffset = dattim.utcoffset()
-    if utcoffset is None:
-        return dattim
-
-    local_tz = dt.timezone(offset=dt.timedelta(seconds=-utcoffset.total_seconds()))
-    return dattim.replace(tzinfo=local_tz)
+def parse_dlms_datetime(data: bytes | None) -> dt.datetime | None:
+    """Parse DLMS 12-byte date-time octet string into Python datetime."""
+    if not data:
+        return None
+    return CosemDateTime.from_bytes(data).as_datetime()
 
 
 class DlmsClient:
     """Represents a DLMS client."""
 
-    _password: bytes
+    _password: str
     _physical_address: int
     _port: str
     _read_delay: int
     _read_timeout: int = READ_TIMEOUT
     _retries: int = DEFAULT_RETRIES
     _retry_delay: float = DEFAULT_RETRY_DELAY
-    client: BlockingDlmsClient | None
+    client: AsyncMeterClient | None
     statistics: DlmsStatistics
     hass: HomeAssistant
 
@@ -160,7 +147,7 @@ class DlmsClient:
         retry_delay: float = DEFAULT_RETRY_DELAY,
     ) -> None:
         """Initialize a new async DLMS client."""
-        self._password = bytes(password, encoding="utf-8")
+        self._password = password
         self._physical_address = physical_address
         self._port = port
         self._read_delay = read_delay
@@ -174,33 +161,19 @@ class DlmsClient:
     async def async_connect(self) -> None:
         """Initiate the connection and associate the client."""
         if not self.client:
-            self.client = BlockingDlmsClient(
-                transport=HdlcTransport(
-                    client_logical_address=LOGICAL_CLIENT_ADDRESS,
-                    server_logical_address=LOGICAL_SERVER_ADDRESS,
-                    server_physical_address=self._physical_address,
-                    io=SerialXIO(port_url=self._port, timeout=self._read_timeout),
-                    retries=self._retries,
-                    retry_delay=self._retry_delay,
-                ),
-                authentication=self.authentication,
-                connection_settings=DlmsConnectionSettings(use_rlrq_rlre=False),
+            self.client = AsyncMeterClient(
+                port=self._port,
+                password=self._password,
+                server_physical_address=self._physical_address,
+                timeout=self._read_timeout,
+                retries=self._retries,
+                retry_delay=self._retry_delay,
             )
-            for job in (self.client.connect, self.client.associate):
-                await self.hass.async_add_executor_job(job)
-
+            await self.client.connect()
             self.statistics.reset_transfer_statistics()
 
-    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
+    async def async_get(self, attribute: CosemAttribute) -> Any:
         """Get the COSEM attribute and decode it."""
-
-        def _get_cosem_attribute(
-            client: BlockingDlmsClient, attribute: cosem.CosemAttribute
-        ) -> Any:
-            """Get the COSEM attribute."""
-            response = client.get(attribute)
-            return A_XDR_DECODER.decode(response)[ATTR_DATA]
-
         if not self.client:
             return None
 
@@ -212,13 +185,11 @@ class DlmsClient:
         )
         try:
             async with asyncio.timeout(total_timeout):
-                result = await self.hass.async_add_executor_job(
-                    _get_cosem_attribute, self.client, attribute
-                )
+                result = await self.client.get(attribute)
             self.statistics.successful_reads += 1
             await asyncio.sleep(self._read_delay / 1000)
             return result
-        except DataResultError:
+        except DataAccessError:
             self.statistics.failed_reads += 1
             raise
         except Exception:
@@ -230,29 +201,22 @@ class DlmsClient:
     async def async_disconnect(self) -> None:
         """Close the connection."""
         if self.client:
-            for job in (self.client.release_association, self.client.disconnect):
-                with suppress(Exception):
-                    async with asyncio.timeout(DISCONNECT_TIMEOUT):
-                        await self.hass.async_add_executor_job(job)
-
+            with suppress(Exception):
+                async with asyncio.timeout(DISCONNECT_TIMEOUT):
+                    await self.client.disconnect()
             self.client = None
 
     @property
     def connected(self) -> bool:
         """Return whether client is connected."""
-        return self.client is not None
+        return self.client is not None and self.client.is_connected
 
     @property
     def dlms_state(self) -> str:
         """Return the current DLMS association state."""
         if self.client:
-            return str(self.client.dlms_connection.state.current_state).lower()
+            return self.client.session.state.name.lower()
         return "disconnected"
-
-    @cached_property
-    def authentication(self) -> AuthenticationMethodManager:
-        """Return the authentication method manager."""
-        return LowLevelSecurityAuthentication(secret=self._password)
 
 
 class DlmsConnection:
@@ -299,7 +263,7 @@ class DlmsConnection:
             await self.client.async_disconnect()
             await asyncio.sleep(DISCONNECT_DELAY)
 
-    async def async_get(self, attribute: cosem.CosemAttribute) -> Any:
+    async def async_get(self, attribute: CosemAttribute) -> Any:
         """Get the COSEM attribute."""
         return await self.client.async_get(attribute)
 

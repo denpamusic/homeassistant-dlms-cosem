@@ -10,13 +10,13 @@ This repository is a Home Assistant custom component integration for **DLMS/COSE
 
 ### Tech Stack & Dependencies
 - **Home Assistant Core**: Targeting modern HA standards (Python 3.14). Consult https://developers.home-assistant.io/blog/ for important core changes and deprecations that might affect the integration.
-- **`dlms-cosem` library**: Upstream library fork (`https://github.com/denpaforks/dlms-cosem`), available locally or as submodule `dlms-cosem/`.
-- **`serialx`**: Transport IO backend (`SerialXIO`) supporting standard serial ports (`/dev/ttyUSB*`, `COM*`), network URLs (`socket://`, `tcp://`, `rfc2217://`), and custom Home Assistant schemes (`esphome-hass://`).
+- **`microdlms` library**: Lightweight, zero-core-dependency MIT-licensed DLMS/COSEM meter client (`https://github.com/denpavibes/microdlms`), available locally as submodule `microdlms/`.
+- **`serialx`**: Transport IO backend supporting standard serial ports (`/dev/ttyUSB*`, `COM*`), network URLs (`socket://`, `tcp://`, `rfc2217://`), and custom Home Assistant schemes (`esphome-hass://`).
 - **Data validation**: `probatio` is preferred where specified by lint rules (avoid importing `voluptuous` where banned by `ruff`).
 
 ### Separation of Concerns: Library vs. Integration
-- **Complex Protocol & Communication Logic**: Keep all protocol details, state machines, frame handling, request retries, and low-level recovery mechanisms inside the underlying `dlms-cosem` library.
-- **Integration Simplicity**: The Home Assistant integration (`custom_components/dlms_cosem`) should remain as lean and simple as possible, serving strictly as a glue layer between Home Assistant's entities/coordinator and the `dlms-cosem` client. Avoid duplicating communication, retry, or recovery logic in the integration layer.
+- **Complex Protocol & Communication Logic**: Keep all protocol details, state machines, frame handling, request retries, and low-level recovery mechanisms inside the underlying `microdlms` library.
+- **Integration Simplicity**: The Home Assistant integration (`custom_components/dlms_cosem`) should remain as lean and simple as possible, serving strictly as a glue layer between Home Assistant's entities/coordinator and the `microdlms` client. Avoid duplicating communication, retry, or recovery logic in the integration layer.
 
 ---
 
@@ -136,7 +136,7 @@ The integration includes an automated test suite located in `tests/`, built upon
 - `tests/const.py`:
   - Contains standardized mock payloads: `MOCK_CONFIG_DATA`, `MOCK_DEVICE_DATA`, `MOCK_ENTRY_DATA`, `MOCK_COSEM_DATA`, and `MOCK_DATETIME`.
 - **Test Modules**:
-  - `test_init.py`: Component lifecycle, config entry setup/unload, logging level updates via `EVENT_LOGGING_CHANGED`, and entry schema migrations across versions (e.g., minor versions 1 -> 3, 2 -> 3).
+  - `test_init.py`: Component lifecycle, config entry setup/unload, and entry schema migrations across versions (e.g., minor versions 1 -> 3, 2 -> 3).
   - `test_config_flow.py`: User configuration flows (serial ports with auto-discovery, network sockets), USB discovery flow, auto-baudrate/probe negotiation, reconfigure flow (ensuring active connection shutdown), and error handling (`cannot_connect`, `unknown`).
   - `test_coordinator.py`: First refresh and background non-blocking reads, entity attribute registration/unregistration lifecycle, slow attribute polling budget (`MAX_SLOW_ATTRIBUTES_PER_POLL = 2`), and error handling during polling cycles.
   - `test_dlms_cosem.py`: `DlmsConnection` state machine, transport creation, reconnection and retry loops, LLS authentication, meter identification, and `DlmsStatistics` counters.
@@ -145,7 +145,7 @@ The integration includes an automated test suite located in `tests/`, built upon
   - `test_system_health.py`: Integration diagnostics and system health info callbacks.
 
 ### 6.3 Testing Best Practices & Conventions
-- **No Real Hardware or Network IO**: Always mock `DlmsConnection`, `serialx.SerialXIO`, and `dlms_cosem.HdlcTransport`. Tests must never attempt to open real serial ports or network sockets.
+- **No Real Hardware or Network IO**: Always mock `DlmsConnection`, `serialx`, and `microdlms.AsyncMeterClient`. Tests must never attempt to open real serial ports or network sockets.
 - **Event Loop Settlement**: Always call `await hass.async_block_till_done()` after config entry operations, state updates, or bus event dispatching.
 - **Time Manipulation**: Use the `freezer` fixture (`pytest-freezer`) and `freezer.tick()` / `freezer.move_to()` to advance time when testing coordinator polling schedules and slow attribute budgeting, avoiding real-time sleeps.
 

@@ -6,8 +6,6 @@ from datetime import timedelta
 import time
 from unittest.mock import AsyncMock, MagicMock
 
-from dlms_cosem.client import DataResultError
-from dlms_cosem.exceptions import CommunicationError
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
@@ -24,6 +22,7 @@ from custom_components.dlms_cosem.coordinator import (
     DlmsCoordinator,
     TrackedAttribute,
 )
+from microdlms import CommunicationError, DataAccessError, DataAccessResult
 
 
 async def test_coordinator_init(
@@ -118,7 +117,9 @@ async def test_coordinator_fetch_attribute_data_result_error(
     coordinator = DlmsCoordinator(hass, mock_connection)
     tracked = TrackedAttribute(COSEM_EQUIPMENT_ID)
     mock_connection.async_get = AsyncMock(
-        side_effect=DataResultError("Object not found")
+        side_effect=DataAccessError(
+            DataAccessResult.OBJECT_UNDEFINED, "Object not found"
+        )
     )
 
     now = time.monotonic()

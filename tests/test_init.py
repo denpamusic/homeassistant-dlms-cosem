@@ -4,21 +4,13 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from dlms_cosem.exceptions import CommunicationError
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import EVENT_LOGGING_CHANGED
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.dlms_cosem import (
-    DEBUG_LOGGER,
-    DEFAULT_LOGGER,
-    _async_logging_changed,
-    async_migrate_entry,
-    async_setup_entry,
-)
+from custom_components.dlms_cosem import async_migrate_entry, async_setup_entry
 from custom_components.dlms_cosem.const import (
     CONF_PORT,
     CONF_READ_DELAY,
@@ -26,6 +18,7 @@ from custom_components.dlms_cosem.const import (
     DOMAIN,
 )
 from custom_components.dlms_cosem.coordinator import DlmsCoordinator
+from microdlms import CommunicationError
 
 from .const import MOCK_ENTRY_DATA
 
@@ -69,50 +62,6 @@ async def test_async_setup_entry_connection_error(
         await async_setup_entry(hass, mock_config_entry)
 
     mock_connection.async_close.assert_awaited_once()
-
-
-async def test_async_logging_changed() -> None:
-    """Test logging level change callback."""
-    with (
-        patch(
-            "custom_components.dlms_cosem._LOGGER.isEnabledFor",
-            return_value=True,
-        ),
-        patch("structlog.configure") as mock_configure,
-    ):
-        _async_logging_changed()
-        mock_configure.assert_called_once_with(wrapper_class=DEBUG_LOGGER)
-
-    with (
-        patch(
-            "custom_components.dlms_cosem._LOGGER.isEnabledFor",
-            return_value=False,
-        ),
-        patch("structlog.configure") as mock_configure,
-    ):
-        _async_logging_changed()
-        mock_configure.assert_called_once_with(wrapper_class=DEFAULT_LOGGER)
-
-
-async def test_async_logging_changed_bus_event(
-    hass: HomeAssistant,
-    mock_config_entry: MockConfigEntry,
-    mock_connection: MagicMock,
-) -> None:
-    """Test logging changed event fired on bus."""
-    with (
-        patch(
-            "custom_components.dlms_cosem.DlmsConnection",
-            return_value=mock_connection,
-        ),
-        patch("structlog.configure") as mock_configure,
-    ):
-        await hass.config_entries.async_setup(mock_config_entry.entry_id)
-        await hass.async_block_till_done()
-        hass.bus.async_fire(EVENT_LOGGING_CHANGED)
-        await hass.async_block_till_done()
-
-    assert mock_configure.call_count >= 1
 
 
 async def test_async_unload_entry(

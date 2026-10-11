@@ -5,10 +5,9 @@ from __future__ import annotations
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_LOGGING_CHANGED, Platform
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-import structlog
 
 from .const import CONF_PORT, CONF_READ_DELAY, DEFAULT_READ_DELAY
 from .coordinator import DlmsCoordinator
@@ -16,28 +15,14 @@ from .dlms_cosem import CONNECTION_ERRORS, DlmsConnection
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
-DEFAULT_LOGGER = structlog.make_filtering_bound_logger(logging.WARNING)
-DEBUG_LOGGER = structlog.make_filtering_bound_logger(logging.DEBUG)
-
 _LOGGER = logging.getLogger(__name__)
 
 type DlmsCosemConfigEntry = ConfigEntry["DlmsCoordinator"]
 
 
-@callback
-def _async_logging_changed(event: Event | None = None) -> None:
-    """Handle logging change."""
-    logger = DEBUG_LOGGER if _LOGGER.isEnabledFor(logging.DEBUG) else DEFAULT_LOGGER
-    structlog.configure(wrapper_class=logger)
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) -> bool:
     """Set up DLMS connection from a config entry."""
     connection = DlmsConnection(hass, entry)
-    structlog.configure(wrapper_class=DEFAULT_LOGGER)
-    entry.async_on_unload(
-        hass.bus.async_listen(EVENT_LOGGING_CHANGED, _async_logging_changed)
-    )
 
     try:
         await connection.async_connect()

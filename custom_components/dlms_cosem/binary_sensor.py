@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import cast
 
-from dlms_cosem import cosem, enumerations
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -15,6 +14,8 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from microdlms import InterfaceClass, ObisCode
 
 from . import DlmsCosemConfigEntry
 from .dlms_cosem import async_extract_error_codes
@@ -27,7 +28,7 @@ class CosemBinarySensorEntityDescription(
 ):
     """Describes the COSEM binary sensor entity."""
 
-    interface: enumerations.CosemInterface = enumerations.CosemInterface.DATA
+    interface: InterfaceClass | int = InterfaceClass.DATA
 
 
 BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
@@ -35,7 +36,7 @@ BINARY_SENSOR_TYPES: tuple[CosemBinarySensorEntityDescription, ...] = (
         key="self_test",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
-        obis=cosem.Obis(0, 0, 97, 97, 0),
+        obis=ObisCode(0, 0, 97, 97, 0),
         scan_interval=timedelta(hours=1),
         translation_key="self_test",
         value_fn=lambda x: any(byte for byte in x),

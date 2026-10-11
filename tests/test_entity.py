@@ -5,28 +5,28 @@ from __future__ import annotations
 from datetime import timedelta
 from unittest.mock import patch
 
-from dlms_cosem import cosem, enumerations
 from homeassistant.core import HomeAssistant
 
 from custom_components.dlms_cosem.const import DOMAIN
 from custom_components.dlms_cosem.coordinator import DlmsCoordinator
 from custom_components.dlms_cosem.entity import CosemEntity, CosemEntityDescription
+from microdlms import InterfaceClass, ObisCode
 
 
 async def test_cosem_entity_description() -> None:
     """Test CosemEntityDescription cached property."""
     desc = CosemEntityDescription(
         key="test_key",
-        interface=enumerations.CosemInterface.DATA,
-        obis=cosem.Obis(0, 0, 96, 1, 0),
+        interface=InterfaceClass.DATA,
+        obis=ObisCode(0, 0, 96, 1, 0),
         attribute=2,
         scan_interval=timedelta(minutes=5),
         value_fn=lambda x: x,
     )
 
     attr = desc.cosem_attribute
-    assert attr.interface == enumerations.CosemInterface.DATA
-    assert attr.instance == cosem.Obis(0, 0, 96, 1, 0)
+    assert attr.interface == InterfaceClass.DATA
+    assert attr.obis == ObisCode(0, 0, 96, 1, 0)
     assert attr.attribute == 2
 
 
@@ -36,8 +36,8 @@ async def test_cosem_entity_lifecycle(
     """Test CosemEntity lifecycle callbacks and properties."""
     desc = CosemEntityDescription(
         key="test_metric",
-        interface=enumerations.CosemInterface.REGISTER,
-        obis=cosem.Obis(1, 0, 1, 8, 0),
+        interface=InterfaceClass.REGISTER,
+        obis=ObisCode(1, 0, 1, 8, 0),
         scan_interval=timedelta(seconds=60),
         value_fn=lambda x: x * 2,
     )

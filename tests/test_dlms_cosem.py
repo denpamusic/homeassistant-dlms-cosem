@@ -5,9 +5,6 @@ from __future__ import annotations
 import datetime as dt
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from dlms_cosem.client import DataResultError
-from dlms_cosem.exceptions import CommunicationError
-from dlms_cosem.security import LowLevelSecurityAuthentication
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -26,9 +23,10 @@ from custom_components.dlms_cosem.dlms_cosem import (
     _load_flag_ids,
     async_decode_flag_id,
     async_decode_logical_device_name,
-    async_dlms_datetime_to_ha_datetime,
     async_extract_error_codes,
+    parse_dlms_datetime,
 )
+from microdlms import CommunicationError, DataAccessError, DataAccessResult
 
 from .const import MOCK_CONFIG_DATA, MOCK_ENTRY_DATA
 
@@ -104,19 +102,26 @@ def test_extract_error_codes() -> None:
     assert async_extract_error_codes(b"\x01\x00") == ["E-09"]
 
 
-def test_dlms_datetime_to_ha_datetime() -> None:
-    """Test timezone conversion between DLMS and Home Assistant."""
-    # Naive datetime
-    naive = dt.datetime(2026, 10, 9, 12, 0, 0)
-    assert async_dlms_datetime_to_ha_datetime(naive) == naive
+def test_parse_dlms_datetime() -> None:
+    """Test parsing DLMS 12-byte date-time octet strings."""
+    assert parse_dlms_datetime(None) is None
+    assert parse_dlms_datetime(b"") is None
 
-    # Datetime with positive UTC offset (e.g. +03:00)
-    # DLMS specification inverts the offset convention
-    offset = dt.timezone(dt.timedelta(hours=3))
-    aware = dt.datetime(2026, 10, 9, 12, 0, 0, tzinfo=offset)
-    converted = async_dlms_datetime_to_ha_datetime(aware)
-    expected_tz = dt.timezone(dt.timedelta(hours=-3))
-    assert converted.tzinfo == expected_tz
+    # Valid DLMS datetime: 2026-10-10 19:23:35 UTC+3 (deviation = 180 min = 0x00B4)
+    data = bytes.fromhex("07ea0a0a061317230000b400")
+    result = parse_dlms_datetime(data)
+    assert result is not None
+    assert result.year == 2026
+    assert result.month == 10
+    assert result.day == 10
+    assert result.hour == 19
+    assert result.minute == 23
+    assert result.second == 35
+    assert result.tzinfo == dt.timezone(dt.timedelta(minutes=180))
+
+    # Unspecified date returns None
+    unspecified = bytes.fromhex("ffffffffffffffff0000b400")
+    assert parse_dlms_datetime(unspecified) is None
 
 
 async def test_dlms_client_lifecycle(hass: HomeAssistant) -> None:
@@ -132,30 +137,31 @@ async def test_dlms_client_lifecycle(hass: HomeAssistant) -> None:
 
     assert bool(client.connected) is False
     assert client.dlms_state == "disconnected"
-    assert isinstance(client.authentication, LowLevelSecurityAuthentication)
 
-    mock_blocking = MagicMock()
-    mock_blocking.connect = MagicMock()
-    mock_blocking.associate = MagicMock()
-    mock_blocking.disconnect = MagicMock()
-    mock_blocking.release_association = MagicMock()
-    mock_blocking.dlms_connection.state.current_state = "ASSOCIATED"
+    mock_async_client = MagicMock()
+    mock_async_client.connect = AsyncMock()
+    mock_async_client.disconnect = AsyncMock()
+    mock_async_client.is_connected = True
+    mock_async_client.session.state.name = "ASSOCIATED"
 
     with patch(
-        "custom_components.dlms_cosem.dlms_cosem.BlockingDlmsClient",
-        return_value=mock_blocking,
+        "custom_components.dlms_cosem.dlms_cosem.AsyncMeterClient",
+        return_value=mock_async_client,
     ):
         await client.async_connect()
         assert bool(client.connected) is True
         assert client.dlms_state == "associated"
+        mock_async_client.connect.assert_awaited_once()
 
         # Calling connect again when already connected is a no-op
         await client.async_connect()
+        mock_async_client.connect.assert_awaited_once()
 
         # Disconnect
         await client.async_disconnect()
         assert bool(client.connected) is False
         assert client.dlms_state == "disconnected"
+        mock_async_client.disconnect.assert_awaited_once()
 
         # Disconnect when already disconnected is a no-op
         await client.async_disconnect()
@@ -175,12 +181,10 @@ async def test_dlms_client_async_get(hass: HomeAssistant) -> None:
     # When client is not connected, async_get returns None
     assert await client.async_get(COSEM_EQUIPMENT_ID) is None
 
-    mock_blocking = MagicMock()
-    mock_blocking.dlms_connection.state.current_state = "ASSOCIATED"
-    # Return A-XDR encoded uint32: 42
-    mock_blocking.get = MagicMock(return_value=b"\x06\x00\x00\x00\x2a")
+    mock_async = MagicMock()
+    mock_async.get = AsyncMock(return_value=42)
 
-    client.client = mock_blocking
+    client.client = mock_async
 
     # Successful read
     result = await client.async_get(COSEM_EQUIPMENT_ID)
@@ -189,9 +193,13 @@ async def test_dlms_client_async_get(hass: HomeAssistant) -> None:
     assert client.statistics.successful_reads == 1
     assert client.statistics.failed_reads == 0
 
-    # DataResultError handling
-    mock_blocking.get = MagicMock(side_effect=DataResultError("Object undefined"))
-    with pytest.raises(DataResultError):
+    # DataAccessError handling
+    mock_async.get = AsyncMock(
+        side_effect=DataAccessError(
+            DataAccessResult.OBJECT_UNDEFINED, "Object undefined"
+        )
+    )
+    with pytest.raises(DataAccessError):
         await client.async_get(COSEM_EQUIPMENT_ID)
     assert client.statistics.requests_count == 2
     assert client.statistics.successful_reads == 1
@@ -199,7 +207,7 @@ async def test_dlms_client_async_get(hass: HomeAssistant) -> None:
     assert client.statistics.connection_losses == 0
 
     # Other exception (communication failure)
-    mock_blocking.get = MagicMock(side_effect=CommunicationError("Connection broken"))
+    mock_async.get = AsyncMock(side_effect=CommunicationError("Connection broken"))
     with pytest.raises(CommunicationError):
         await client.async_get(COSEM_EQUIPMENT_ID)
     assert client.statistics.requests_count == 3
@@ -291,9 +299,9 @@ async def test_dlms_client_retries_and_timeout(hass: HomeAssistant) -> None:
     assert client_default._retries == DEFAULT_RETRIES
     assert client_default._retry_delay == DEFAULT_RETRY_DELAY
 
-    mock_blocking = MagicMock()
-    mock_blocking.get = MagicMock(return_value=b"\x06\x00\x00\x00\x01")
-    client.client = mock_blocking
+    mock_async = MagicMock()
+    mock_async.get = AsyncMock(return_value=1)
+    client.client = mock_async
 
     with patch("asyncio.timeout") as mock_timeout:
         mock_timeout.return_value.__aenter__ = AsyncMock()

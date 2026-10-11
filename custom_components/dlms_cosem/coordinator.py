@@ -7,10 +7,10 @@ import logging
 import time
 from typing import Any, Final, NamedTuple, override
 
-from dlms_cosem import cosem
-from dlms_cosem.client import DataResultError
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+
+from microdlms import CosemAttribute, DataAccessError
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .dlms_cosem import CONNECTION_ERRORS, DlmsConnection, DlmsStatistics
@@ -29,7 +29,7 @@ RETRY_INTERVALS: Final = [
 class TrackedAttribute(NamedTuple):
     """Represents a tracked COSEM attribute."""
 
-    attribute: cosem.CosemAttribute
+    attribute: CosemAttribute
     scan_interval: timedelta | None = None
 
 
@@ -56,7 +56,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def async_register_attribute(
         self,
         key: str,
-        attribute: cosem.CosemAttribute,
+        attribute: CosemAttribute,
         scan_interval: timedelta | None = None,
     ) -> None:
         """Register an attribute to be polled."""
@@ -90,7 +90,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             value = await self.connection.async_get(tracked.attribute)
             self._last_polled[key] = now
             return value
-        except DataResultError as err:
+        except DataAccessError as err:
             _LOGGER.debug(
                 "Unable to read attribute %s (%s): %s", key, tracked.attribute, err
             )

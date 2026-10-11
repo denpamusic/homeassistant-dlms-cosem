@@ -5,12 +5,11 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Final
 
-from dlms_cosem import cosem, enumerations
+from microdlms import CosemAttribute, InterfaceClass, ObisCode
 
 DOMAIN: Final = "dlms_cosem"
 
 # Attributes
-ATTR_DATA: Final = "data"
 ATTR_EQUIPMENT_ID: Final = "equipment_id"
 
 # Configuration
@@ -29,18 +28,18 @@ DEFAULT_RETRY_DELAY: Final = 0.5  # seconds
 DEFAULT_SCAN_INTERVAL: Final = timedelta(seconds=30)
 
 # COSEM attributes
-COSEM_EQUIPMENT_ID = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 96, 1, 0),
+COSEM_EQUIPMENT_ID = CosemAttribute(
+    interface=InterfaceClass.DATA,
+    obis=ObisCode(0, 0, 96, 1, 0),
     attribute=DEFAULT_ATTRIBUTE,
 )
-COSEM_LOGICAL_DEVICE_NAME = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 42, 0, 0),
+COSEM_LOGICAL_DEVICE_NAME = CosemAttribute(
+    interface=InterfaceClass.DATA,
+    obis=ObisCode(0, 0, 42, 0, 0),
     attribute=DEFAULT_ATTRIBUTE,
 )
-COSEM_SOFTWARE_PACKAGE = cosem.CosemAttribute(
-    interface=enumerations.CosemInterface.DATA,
-    instance=cosem.Obis(0, 0, 96, 1, 2),
+COSEM_SOFTWARE_PACKAGE = CosemAttribute(
+    interface=InterfaceClass.DATA,
+    obis=ObisCode(0, 0, 96, 1, 2),
     attribute=DEFAULT_ATTRIBUTE,
 )

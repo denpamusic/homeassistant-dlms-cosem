@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any, Final
 
-from dlms_cosem import time
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 
 from custom_components.dlms_cosem.const import (
@@ -18,7 +17,7 @@ from custom_components.dlms_cosem.const import (
 ATTR_EQUIPMENT_ID: Final = "equipment_id"
 
 MOCK_DATETIME = dt.datetime(2026, 10, 9, 15, 0, 0, tzinfo=dt.UTC)
-MOCK_DATETIME_BYTES = time.datetime_to_bytes(MOCK_DATETIME)
+MOCK_DATETIME_BYTES = bytes.fromhex("07ea0a09ff0f000000000000")
 
 MOCK_CONFIG_DATA: Final[dict[str, Any]] = {
     CONF_PORT: "/dev/ttyUSB0",

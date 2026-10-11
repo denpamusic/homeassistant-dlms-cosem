@@ -8,9 +8,10 @@ from datetime import timedelta
 from functools import cached_property
 from typing import Any
 
-from dlms_cosem import cosem, enumerations
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from microdlms import CosemAttribute, InterfaceClass, ObisCode
 
 from .const import DEFAULT_ATTRIBUTE, DOMAIN
 from .coordinator import DlmsCoordinator
@@ -21,17 +22,17 @@ class CosemEntityDescription(EntityDescription):
     """Describes the COSEM entity."""
 
     attribute: int = DEFAULT_ATTRIBUTE
-    interface: enumerations.CosemInterface
-    obis: cosem.Obis
+    interface: InterfaceClass | int
+    obis: ObisCode
     scan_interval: timedelta | None = None
     value_fn: Callable[[Any], Any]
 
     @cached_property
-    def cosem_attribute(self) -> cosem.CosemAttribute:
+    def cosem_attribute(self) -> CosemAttribute:
         """Return the COSEM attribute."""
-        return cosem.CosemAttribute(
+        return CosemAttribute(
             interface=self.interface,
-            instance=self.obis,
+            obis=self.obis,
             attribute=self.attribute,
         )
 
