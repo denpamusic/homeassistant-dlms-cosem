@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components import system_health
 from homeassistant.core import HomeAssistant, callback
 
+from microdlms import __version__ as microdlms_version
+
 from .const import DOMAIN
 
 if TYPE_CHECKING:
@@ -26,6 +28,7 @@ def _get_entry_info(entry: DlmsCosemConfigEntry) -> dict[str, Any]:
     coordinator = entry.runtime_data
     stats = coordinator.statistics
     return {
+        "microdlms_version": microdlms_version,
         "connected": coordinator.connection.connected,
         "dlms_state": coordinator.dlms_state,
         "tracked_attributes": coordinator.tracked_attributes_count,

@@ -143,6 +143,7 @@
       "connection_losses": "Обрывы связи",
       "dlms_state": "Состояние DLMS",
       "failed_reads": "Неудачные чтения",
+      "microdlms_version": "Версия MicroDLMS",
       "requests_count": "Всего запросов",
       "slow_attributes": "Медленные атрибуты",
       "successful_reads": "Успешные чтения",

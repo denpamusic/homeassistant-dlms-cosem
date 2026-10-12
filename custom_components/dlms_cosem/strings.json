@@ -143,6 +143,7 @@
       "connection_losses": "Connection losses",
       "dlms_state": "DLMS state",
       "failed_reads": "Failed reads",
+      "microdlms_version": "MicroDLMS version",
       "requests_count": "Total requests",
       "slow_attributes": "Slow attributes",
       "successful_reads": "Successful reads",

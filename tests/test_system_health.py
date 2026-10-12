@@ -15,6 +15,7 @@ from custom_components.dlms_cosem.system_health import (
     async_register,
     system_health_info,
 )
+from microdlms import __version__ as microdlms_version
 
 from .const import MOCK_ENTRY_DATA
 
@@ -44,6 +45,7 @@ async def test_system_health_single_entry(
     mock_config_entry.runtime_data = mock_coordinator
 
     data = await system_health_info(hass)
+    assert data["microdlms_version"] == microdlms_version
     assert data["connected"] is True
     assert data["dlms_state"] == "associated"
     assert data["tracked_attributes"] == 0
