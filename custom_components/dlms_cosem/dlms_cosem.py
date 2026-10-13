@@ -166,8 +166,6 @@ class DlmsClient:
                 password=self._password,
                 server_physical_address=self._physical_address,
                 timeout=self._read_timeout,
-                retries=self._retries,
-                retry_delay=self._retry_delay,
             )
             await self.client.connect()
             self.statistics.reset_transfer_statistics()
@@ -185,7 +183,11 @@ class DlmsClient:
         )
         try:
             async with asyncio.timeout(total_timeout):
-                result = await self.client.get(attribute)
+                result = await self.client.get(
+                    attribute,
+                    retries=self._retries,
+                    retry_delay=self._retry_delay,
+                )
             self.statistics.successful_reads += 1
             await asyncio.sleep(self._read_delay / 1000)
             return result
