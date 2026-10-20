@@ -7,4 +7,4 @@ pytest-cov==7.1.0
 pytest-homeassistant-custom-component==0.13.371
 ruff==0.17.0
 tomli==2.5.0
-tox==4.65.3
+tox==4.67.0
