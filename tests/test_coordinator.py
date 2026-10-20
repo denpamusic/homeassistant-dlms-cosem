@@ -142,7 +142,7 @@ async def test_coordinator_fetch_attribute_connection_error(
     with pytest.raises(UpdateFailed):
         await coordinator._async_fetch_attribute("key", tracked, now)
 
-    mock_connection.async_close.assert_awaited_once()
+    mock_connection.async_disconnect.assert_awaited_once()
 
 
 async def test_coordinator_update_data_loop(
@@ -200,4 +200,4 @@ async def test_coordinator_shutdown(
     """Test coordinator shutdown closes DLMS connection."""
     coordinator = DlmsCoordinator(hass, mock_connection)
     await coordinator.async_shutdown()
-    mock_connection.async_close.assert_awaited_once()
+    mock_connection.async_disconnect.assert_awaited_once()

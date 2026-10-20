@@ -27,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DlmsCosemConfigEntry) ->
     try:
         await connection.async_connect()
     except CONNECTION_ERRORS as err:
-        await connection.async_close()
+        await connection.async_disconnect()
         raise ConfigEntryNotReady(
             f"Timed out while connecting to {connection.entry.data[CONF_PORT]}"
         ) from err

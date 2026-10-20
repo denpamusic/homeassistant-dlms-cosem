@@ -16,7 +16,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SerialPortSelector
 import probatio
 
-from microdlms import CommunicationError
+from microdlms import AsyncMeterClient, CommunicationError
 
 from . import DlmsCosemConfigEntry
 from .const import (
@@ -34,9 +34,8 @@ from .const import (
 )
 from .dlms_cosem import (
     CONNECTION_ERRORS,
-    DlmsClient,
-    DlmsConnection,
     async_decode_logical_device_name,
+    async_get_dlms_client,
 )
 
 STEP_USER_DATA_SCHEMA = probatio.Schema(
@@ -58,13 +57,17 @@ _LOGGER = logging.getLogger(__name__)
 
 async def validate_input(
     hass: HomeAssistant, data: MutableMapping[str, Any]
-) -> DlmsClient:
+) -> AsyncMeterClient:
     """Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
     try:
-        client = await DlmsConnection.async_check(hass, data)
+        client = await async_get_dlms_client(
+            port=data[CONF_PORT],
+            password=data.get(CONF_PASSWORD, DEFAULT_PASSWORD),
+            physical_address=data.get(CONF_PHYSICAL_ADDRESS, 1),
+        )
     except CONNECTION_ERRORS as err:
         raise CannotConnect from err
 
@@ -79,7 +82,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-        self.client: DlmsClient | None = None
+        self.client: AsyncMeterClient | None = None
         self.init_info: dict[str, Any] = {}
         self.identify_task: asyncio.Task[None] | None = None
 
@@ -128,20 +131,20 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
             else:
                 try:
-                    equipment_id = await client.async_get(COSEM_EQUIPMENT_ID)
+                    equipment_id = await client.get(COSEM_EQUIPMENT_ID)
                 except Exception:
                     errors["base"] = "cannot_connect"
                 else:
                     await self.async_set_unique_id(equipment_id)
                     self._abort_if_unique_id_mismatch(reason="unique_id_mismatch")
-                    await client.async_disconnect()
+                    await client.disconnect()
                     await asyncio.sleep(user_input[CONF_READ_DELAY] / 1000)
                     return self.async_update_reload_and_abort(
                         entry, data_updates=user_input
                     )
                 finally:
-                    if client.connected:
-                        await client.async_disconnect()
+                    if client.is_connected:
+                        await client.disconnect()
 
         return self.async_show_form(
             step_id="reconfigure",
@@ -181,8 +184,8 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Finish the integration config."""
-        client = cast(DlmsClient, self.client)
-        await client.async_disconnect()
+        client = cast(AsyncMeterClient, self.client)
+        await client.disconnect()
         manufacturer, model, equipment_id = DEVICE_INFO_GETTER(self.init_info)
         await self._async_set_unique_id(equipment_id)
         return self.async_create_entry(
@@ -202,8 +205,8 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _async_identify_device(self) -> None:
         """Identify the device."""
-        client = cast(DlmsClient, self.client)
-        raw_device_name = await client.async_get(COSEM_LOGICAL_DEVICE_NAME)
+        client = cast(AsyncMeterClient, self.client)
+        raw_device_name = await client.get(COSEM_LOGICAL_DEVICE_NAME)
         logical_device_name = (
             raw_device_name.decode(encoding="utf-8")
             if isinstance(raw_device_name, bytes)
@@ -212,8 +215,8 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
         manufacturer, model = await async_decode_logical_device_name(
             self.hass, logical_device_name
         )
-        equipment_id = await client.async_get(COSEM_EQUIPMENT_ID)
-        sw_version = await client.async_get(COSEM_SOFTWARE_PACKAGE)
+        equipment_id = await client.get(COSEM_EQUIPMENT_ID)
+        sw_version = await client.get(COSEM_SOFTWARE_PACKAGE)
         self.init_info.update(
             {
                 ATTR_EQUIPMENT_ID: equipment_id,

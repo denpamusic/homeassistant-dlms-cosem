@@ -97,7 +97,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._last_polled[key] = now
             return None
         except CONNECTION_ERRORS as err:
-            await self.connection.async_close()
+            await self.connection.async_disconnect()
             raise UpdateFailed(
                 f"Communication error while reading {key}: {err}"
             ) from err
@@ -154,4 +154,4 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""
         await super().async_shutdown()
-        await self.connection.async_close()
+        await self.connection.async_disconnect()

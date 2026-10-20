@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, MutableMapping
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 import datetime as dt
@@ -32,6 +32,8 @@ from .const import (
     CONF_PORT,
     CONF_READ_DELAY,
     DEFAULT_MODEL,
+    DEFAULT_PASSWORD,
+    DEFAULT_READ_DELAY,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
 )
@@ -121,153 +123,71 @@ def parse_dlms_datetime(data: bytes | None) -> dt.datetime | None:
     return CosemDateTime.from_bytes(data).as_datetime()
 
 
-class DlmsClient:
-    """Represents a DLMS client."""
+async def async_get_dlms_client(
+    port: str,
+    password: str = DEFAULT_PASSWORD,
+    physical_address: int = 1,
+    timeout: int = READ_TIMEOUT,
+) -> AsyncMeterClient:
+    """Create and connect a DLMS AsyncMeterClient."""
+    client = AsyncMeterClient(
+        port=port,
+        password=password,
+        server_physical_address=physical_address,
+        timeout=timeout,
+    )
+    await client.connect()
+    return client
 
-    _password: str
-    _physical_address: int
-    _port: str
-    _read_delay: int
+
+class DlmsConnection:
+    """Represents a DLMS connection."""
+
     _read_timeout: int = READ_TIMEOUT
     _retries: int = DEFAULT_RETRIES
     _retry_delay: float = DEFAULT_RETRY_DELAY
     client: AsyncMeterClient | None
-    statistics: DlmsStatistics
+    entry: ConfigEntry
     hass: HomeAssistant
+    statistics: DlmsStatistics
 
     def __init__(
         self,
         hass: HomeAssistant,
-        port: str,
-        password: str,
-        physical_address: int,
-        read_delay: int,
+        entry: ConfigEntry,
+        *,
         read_timeout: int = READ_TIMEOUT,
         retries: int = DEFAULT_RETRIES,
         retry_delay: float = DEFAULT_RETRY_DELAY,
     ) -> None:
-        """Initialize a new async DLMS client."""
-        self._password = password
-        self._physical_address = physical_address
-        self._port = port
-        self._read_delay = read_delay
+        """Initialize a new DLMS/COSEM connection."""
+        self.entry = entry
+        self.hass = hass
         self._read_timeout = read_timeout
         self._retries = retries
         self._retry_delay = retry_delay
         self.client = None
         self.statistics = DlmsStatistics()
-        self.hass = hass
 
-    async def async_connect(self) -> None:
-        """Initiate the connection and associate the client."""
-        if not self.client:
-            self.client = AsyncMeterClient(
-                port=self._port,
-                password=self._password,
-                server_physical_address=self._physical_address,
-                timeout=self._read_timeout,
-            )
-            await self.client.connect()
-            self.statistics.reset_transfer_statistics()
+    @cached_property
+    def port(self) -> str:
+        """Return the port."""
+        return cast(str, self.entry.data[CONF_PORT])
 
-    async def async_get(self, attribute: CosemAttribute) -> Any:
-        """Get the COSEM attribute and decode it."""
-        if not self.client:
-            return None
+    @cached_property
+    def password(self) -> str:
+        """Return the password."""
+        return cast(str, self.entry.data.get(CONF_PASSWORD, DEFAULT_PASSWORD))
 
-        self.statistics.requests_count += 1
-        total_timeout = (
-            self._read_timeout * (self._retries + 1)
-            + (self._retry_delay * self._retries)
-            + 2
-        )
-        try:
-            async with asyncio.timeout(total_timeout):
-                result = await self.client.get(
-                    attribute,
-                    retries=self._retries,
-                    retry_delay=self._retry_delay,
-                )
-            self.statistics.successful_reads += 1
-            await asyncio.sleep(self._read_delay / 1000)
-            return result
-        except DataAccessError:
-            self.statistics.failed_reads += 1
-            raise
-        except Exception:
-            self.statistics.failed_reads += 1
-            self.statistics.connection_losses += 1
-            self.statistics.connection_loss_at = dt.datetime.now(dt.UTC)
-            raise
+    @cached_property
+    def physical_address(self) -> int:
+        """Return the physical address."""
+        return cast(int, self.entry.data.get(CONF_PHYSICAL_ADDRESS, 1))
 
-    async def async_disconnect(self) -> None:
-        """Close the connection."""
-        if self.client:
-            with suppress(Exception):
-                async with asyncio.timeout(DISCONNECT_TIMEOUT):
-                    await self.client.disconnect()
-            self.client = None
-
-    @property
-    def connected(self) -> bool:
-        """Return whether client is connected."""
-        return self.client is not None and self.client.is_connected
-
-    @property
-    def dlms_state(self) -> str:
-        """Return the current DLMS association state."""
-        if self.client:
-            return self.client.session.state.name.lower()
-        return "disconnected"
-
-
-class DlmsConnection:
-    """Represents DLMS connection."""
-
-    client: DlmsClient
-    entry: ConfigEntry
-    hass: HomeAssistant
-
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize a new DLMS/COSEM connection."""
-        self.client = DlmsClient(
-            hass,
-            port=entry.data[CONF_PORT],
-            password=entry.data[CONF_PASSWORD],
-            physical_address=entry.data[CONF_PHYSICAL_ADDRESS],
-            read_delay=entry.data[CONF_READ_DELAY],
-        )
-        self.entry = entry
-        self.hass = hass
-
-    @property
-    def connected(self) -> bool:
-        """Return whether connection is active."""
-        return self.client.connected
-
-    @property
-    def dlms_state(self) -> str:
-        """Return the current DLMS association state."""
-        return self.client.dlms_state
-
-    @property
-    def statistics(self) -> DlmsStatistics:
-        """Return the connection statistics."""
-        return self.client.statistics
-
-    async def async_connect(self) -> None:
-        """Initialize the connection."""
-        await self.client.async_connect()
-
-    async def async_close(self) -> None:
-        """Close the connection."""
-        if self.client.connected:
-            await self.client.async_disconnect()
-            await asyncio.sleep(DISCONNECT_DELAY)
-
-    async def async_get(self, attribute: CosemAttribute) -> Any:
-        """Get the COSEM attribute."""
-        return await self.client.async_get(attribute)
+    @cached_property
+    def read_delay(self) -> int:
+        """Return the read delay in milliseconds."""
+        return cast(int, self.entry.data.get(CONF_READ_DELAY, DEFAULT_READ_DELAY))
 
     @cached_property
     def manufacturer(self) -> str:
@@ -289,17 +209,64 @@ class DlmsConnection:
         """Return the serial number."""
         return cast(str, self.entry.data[ATTR_EQUIPMENT_ID])
 
-    @staticmethod
-    async def async_check(
-        hass: HomeAssistant, data: MutableMapping[str, Any]
-    ) -> DlmsClient:
-        """Check DLMS meter connection."""
-        client = DlmsClient(
-            hass,
-            port=data[CONF_PORT],
-            password=data[CONF_PASSWORD],
-            physical_address=data[CONF_PHYSICAL_ADDRESS],
-            read_delay=data[CONF_READ_DELAY],
+    async def async_connect(self) -> None:
+        """Initiate the connection and associate the client."""
+        if not self.client:
+            self.client = await async_get_dlms_client(
+                port=self.port,
+                password=self.password,
+                physical_address=self.physical_address,
+                timeout=self._read_timeout,
+            )
+            self.statistics.reset_transfer_statistics()
+
+    async def async_get(self, attribute: CosemAttribute) -> Any:
+        """Get the COSEM attribute and decode it."""
+        if not self.client:
+            return None
+
+        self.statistics.requests_count += 1
+        total_timeout = (
+            self._read_timeout * (self._retries + 1)
+            + (self._retry_delay * self._retries)
+            + 2
         )
-        await client.async_connect()
-        return client
+        try:
+            async with asyncio.timeout(total_timeout):
+                result = await self.client.get(
+                    attribute,
+                    retries=self._retries,
+                    retry_delay=self._retry_delay,
+                )
+            self.statistics.successful_reads += 1
+            await asyncio.sleep(self.read_delay / 1000)
+            return result
+        except DataAccessError:
+            self.statistics.failed_reads += 1
+            raise
+        except Exception:
+            self.statistics.failed_reads += 1
+            self.statistics.connection_losses += 1
+            self.statistics.connection_loss_at = dt.datetime.now(dt.UTC)
+            raise
+
+    async def async_disconnect(self) -> None:
+        """Disconnect the connection."""
+        if self.client:
+            with suppress(Exception):
+                async with asyncio.timeout(DISCONNECT_TIMEOUT):
+                    await self.client.disconnect()
+            self.client = None
+            await asyncio.sleep(DISCONNECT_DELAY)
+
+    @property
+    def connected(self) -> bool:
+        """Return whether client is connected."""
+        return self.client is not None and self.client.is_connected
+
+    @property
+    def dlms_state(self) -> str:
+        """Return the current DLMS association state."""
+        if self.client:
+            return self.client.session.state.name.lower()
+        return "disconnected"

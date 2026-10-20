@@ -21,8 +21,7 @@ from custom_components.dlms_cosem.const import (
     COSEM_SOFTWARE_PACKAGE,
     DOMAIN,
 )
-from custom_components.dlms_cosem.dlms_cosem import DlmsClient
-from microdlms import CommunicationError
+from microdlms import AsyncMeterClient, CommunicationError
 
 from .const import MOCK_CONFIG_DATA, MOCK_ENTRY_DATA
 
@@ -30,12 +29,16 @@ from .const import MOCK_CONFIG_DATA, MOCK_ENTRY_DATA
 @pytest.fixture
 def mock_flow_client() -> MagicMock:
     """Create a mock DLMS client for config flow."""
-    client = MagicMock(spec=DlmsClient)
-    client.connected = True
-    client.async_connect = AsyncMock()
-    client.async_disconnect = AsyncMock()
+    client = MagicMock(spec=AsyncMeterClient)
+    client.is_connected = True
+    client.connect = AsyncMock()
 
-    async def _mock_get(attribute: object) -> object:
+    async def _mock_disconnect() -> None:
+        client.is_connected = False
+
+    client.disconnect = AsyncMock(side_effect=_mock_disconnect)
+
+    async def _mock_get(attribute: object, **kwargs: object) -> object:
         if attribute == COSEM_LOGICAL_DEVICE_NAME:
             return b"INC236000000"
         if attribute == COSEM_EQUIPMENT_ID:
@@ -44,7 +47,7 @@ def mock_flow_client() -> MagicMock:
             return "1.0.0"
         return "mock_val"
 
-    client.async_get = AsyncMock(side_effect=_mock_get)
+    client.get = AsyncMock(side_effect=_mock_get)
     return client
 
 
@@ -53,7 +56,7 @@ async def test_validate_input_success(
 ) -> None:
     """Test successful input validation."""
     with patch(
-        "custom_components.dlms_cosem.dlms_cosem.DlmsConnection.async_check",
+        "custom_components.dlms_cosem.config_flow.async_get_dlms_client",
         return_value=mock_flow_client,
     ):
         result = await validate_input(hass, dict(MOCK_CONFIG_DATA))
@@ -64,7 +67,7 @@ async def test_validate_input_failure(hass: HomeAssistant) -> None:
     """Test failed input validation."""
     with (
         patch(
-            "custom_components.dlms_cosem.dlms_cosem.DlmsConnection.async_check",
+            "custom_components.dlms_cosem.config_flow.async_get_dlms_client",
             side_effect=CommunicationError("Failed"),
         ),
         pytest.raises(CannotConnect),
@@ -153,7 +156,7 @@ async def test_flow_identify_failure(
     hass: HomeAssistant, mock_flow_client: MagicMock
 ) -> None:
     """Test identify step error handling."""
-    mock_flow_client.async_get = AsyncMock(
+    mock_flow_client.get = AsyncMock(
         side_effect=CommunicationError("Communication failed")
     )
     with patch(
@@ -268,7 +271,12 @@ async def test_flow_reconfigure_client_get_error(
 ) -> None:
     """Test reconfigure flow handles error reading equipment ID."""
     mock_config_entry.runtime_data = mock_coordinator
-    mock_flow_client.async_get = AsyncMock(side_effect=CommunicationError("Read error"))
+
+    async def _mock_get_error(*args: object, **kwargs: object) -> None:
+        mock_flow_client.is_connected = False
+        raise CommunicationError("Read error")
+
+    mock_flow_client.get = AsyncMock(side_effect=_mock_get_error)
 
     result = await mock_config_entry.start_reconfigure_flow(hass)
     with patch(
@@ -292,7 +300,7 @@ async def test_flow_reconfigure_unique_id_mismatch(
 ) -> None:
     """Test reconfigure flow aborts on unique ID mismatch."""
     mock_config_entry.runtime_data = mock_coordinator
-    mock_flow_client.async_get = AsyncMock(return_value="DIFFERENT_SERIAL")
+    mock_flow_client.get = AsyncMock(return_value="DIFFERENT_SERIAL")
 
     result = await mock_config_entry.start_reconfigure_flow(hass)
     with patch(
@@ -340,4 +348,4 @@ async def test_flow_reconfigure_success(
     assert mock_config_entry.data[CONF_PASSWORD] == "new_password"
     assert mock_config_entry.data[CONF_PHYSICAL_ADDRESS] == 2
     assert mock_config_entry.data[CONF_READ_DELAY] == 300
-    mock_flow_client.async_disconnect.assert_awaited()
+    mock_flow_client.disconnect.assert_awaited()

@@ -55,7 +55,7 @@ def mock_connection(
     conn.equipment_id = "12345678"
 
     conn.async_connect = AsyncMock()
-    conn.async_close = AsyncMock()
+    conn.async_disconnect = AsyncMock()
 
     async def _mock_get(attribute: object) -> object:
         for key, val in MOCK_COSEM_DATA.items():

@@ -61,7 +61,7 @@ async def test_async_setup_entry_connection_error(
         mock_config_entry.mock_state(hass, ConfigEntryState.SETUP_IN_PROGRESS)
         await async_setup_entry(hass, mock_config_entry)
 
-    mock_connection.async_close.assert_awaited_once()
+    mock_connection.async_disconnect.assert_awaited_once()
 
 
 async def test_async_unload_entry(
