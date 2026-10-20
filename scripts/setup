@@ -6,16 +6,16 @@ cd "$(dirname "$0")/.."
 # Trust repository directory in git inside devcontainer
 git config --global --add safe.directory "${PWD}" || true
 
-# Upgrade pip
-python3 -m pip install --upgrade pip
+# Ensure uv is installed
+if ! command -v uv &> /dev/null; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="${HOME}/.local/bin:${PATH}"
+fi
 
-# Install requirements
-python3 -m pip install -r requirements.txt
-python3 -m pip install -r requirements_test.txt
-python3 -m pip install -r requirements_dev.txt
+# Sync dependencies with uv
+uv sync
 
 # Install prek hooks if in a git repository
 if [ -d .git ]; then
-    prek install || true
+    uv run prek install || true
 fi
-

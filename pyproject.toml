@@ -1,14 +1,41 @@
-# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
-
 [project]
 name = "homeassistant-dlms-cosem"
+version = "0.2.0"
+description = "DLMS/COSEM smart energy meter integration for Home Assistant."
+readme = "README.md"
+requires-python = ">=3.14.2"
 authors = [
     {name = "Denis Paavilainen", email = "denpa@denpa.pro"}
 ]
-description = "DLMS/COSEM smart energy meter integration for Home Assistant."
+dependencies = [
+    "homeassistant>=2026.9.4",
+    "microdlms==0.1.6",
+]
+
+[dependency-groups]
+dev = [
+    "aiousbwatcher==1.1.2",
+    "codespell==2.4.3",
+    "complexipy>=8.0.1",
+    "mypy==2.4.0",
+    "openpyxl>=3.1.5",
+    "prek==0.5.4",
+    "pytest-cov==7.1.0",
+    "pytest-homeassistant-custom-component==0.13.371",
+    "ruff==0.17.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+microdlms = { path = "microdlms", editable = true }
+
+[tool.complexipy]
+max-complexity-allowed = 15
 
 [tool.codespell]
-skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.tox,.vscode,build,*/translations/*.json,custom_components/dlms_cosem/dlms_flagids.json"
+skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.venv,.vscode,build,*/translations/*.json,custom_components/dlms_cosem/dlms_flagids.json"
 ignore-words-list = "hass"
 
 [tool.mypy]
@@ -48,7 +75,7 @@ exclude = [
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
-    ".tox",
+    ".venv",
     ".vscode",
     "config",
     "microdlms"
@@ -61,7 +88,7 @@ exclude = [
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
-    ".tox",
+    ".venv",
     ".vscode",
     "config",
     "microdlms"
@@ -190,8 +217,9 @@ max-complexity = 25
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = [".git", "config", "microdlms"]
+norecursedirs = [".git", "config", "microdlms", ".venv"]
 asyncio_mode = "auto"
+addopts = "--cov=custom_components.dlms_cosem --cov-report=term-missing --cov-fail-under=90"
 
 [tool.coverage.run]
 source = ["custom_components/dlms_cosem"]
@@ -204,52 +232,3 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@overload"
 ]
-
-[tool.tox]
-legacy_tox_ini = """
-    [tox]
-    envlist = lint, test, coverage, type
-    isolated_build = True
-    skip_missing_interpreters = True
-    ignore_basepython_conflict = True
-    no_package = True
-
-    [gh-actions]
-    python =
-        3.14: lint, test, coverage, type
-
-    [testenv:lint]
-    deps =
-        -r{toxinidir}/requirements.txt
-        -r{toxinidir}/requirements_test.txt
-
-    commands =
-        prek run codespell --all-files
-        prek run ruff-check --all-files
-        prek run check-json --all-files
-
-    [testenv:test]
-    deps =
-        -r{toxinidir}/requirements.txt
-        -r{toxinidir}/requirements_test.txt
-
-    commands =
-        pytest
-
-    [testenv:coverage]
-    deps =
-        -r{toxinidir}/requirements.txt
-        -r{toxinidir}/requirements_test.txt
-
-    commands =
-        coverage run -m pytest
-        coverage report --fail-under=90
-
-    [testenv:type]
-    deps =
-        -r{toxinidir}/requirements.txt
-        -r{toxinidir}/requirements_test.txt
-
-    commands =
-        mypy custom_components/dlms_cosem tests
-"""

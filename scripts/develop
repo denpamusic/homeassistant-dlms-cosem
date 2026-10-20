@@ -23,5 +23,5 @@ EOF
 fi
 
 # Run Home Assistant Core with config directory
-hass -c config
+uv run hass -c config
 

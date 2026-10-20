@@ -51,7 +51,7 @@
                     "*.yaml": "home-assistant"
                 },
                 "json.format.keepLines": true,
-                "python.defaultInterpreterPath": "/usr/local/bin/python"
+                "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
             }
         }
     }

@@ -1,0 +1,30 @@
+name: Complexity
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  complexity:
+    name: Code complexity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Run complexipy
+        run: uv run complexipy custom_components tests --max-complexity-allowed 15
+
