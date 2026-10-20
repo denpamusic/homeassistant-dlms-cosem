@@ -8,9 +8,7 @@
     "@denpamusic"
   ],
   "config_flow": true,
-  "dependencies": [
-    "usb"
-  ],
+  "dependencies": [],
   "documentation": "https://github.com/denpamusic/homeassistant-dlms-cosem",
   "integration_type": "device",
   "iot_class": "local_polling",

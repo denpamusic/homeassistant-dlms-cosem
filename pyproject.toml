@@ -14,7 +14,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "aiousbwatcher==1.1.2",
     "codespell==2.4.3",
     "complexipy>=8.0.1",
     "mypy==2.4.0",
