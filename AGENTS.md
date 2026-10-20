@@ -16,10 +16,8 @@ Manual for AI agents working on `homeassistant-dlms-cosem`. Read fully before ch
 
 2.2. Common commands:
 - `uv sync`: Sync virtual environment with `uv.lock`.
-- `uv run prek run --all-files`: Run all git hooks.
+- `uv run prek run --all-files`: Run all git hooks (format, lint, spellcheck, complexity, types).
 - `uv run pytest`: Run test suite with branch coverage enforcement (>=90%).
-- `uv run mypy custom_components/dlms_cosem tests`: Run static type check.
-- `uv run complexipy custom_components tests --max-complexity-allowed 15`: Check cognitive complexity.
 - `uv run python scripts/sync_translations.py --sort`: Sync and sort translations after editing `strings.json`.
 
 ## 3. Code Standards & Architecture
@@ -68,6 +66,4 @@ Manual for AI agents working on `homeassistant-dlms-cosem`. Read fully before ch
 
 4.4. Verify all checks pass before committing:
 - `uv run prek run --all-files`
-- `uv run complexipy custom_components tests --max-complexity-allowed 15`
-- `uv run mypy custom_components/dlms_cosem tests`
 - `uv run pytest`
