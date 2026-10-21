@@ -2,7 +2,7 @@
     "name": "DLMS/COSEM (Home Assistant)",
     "image": "mcr.microsoft.com/devcontainers/python:3.14-bookworm",
     "features": {
-        "ghcr.io/devcontainers/features/github-cli:1": {}
+        "ghcr.io/devcontainers/features/github-cli:1": { }
     },
     "forwardPorts": [
         8123
@@ -17,6 +17,15 @@
         "-e",
         "GIT_EDITOR=code --wait"
     ],
+    "containerEnv": {
+        "UV_LINK_MODE": "copy"
+    },
+    "mounts": [
+        "target=${containerWorkspaceFolder}/.venv,type=volume",
+        "source=dlms-cosem-uv-cache,target=/home/vscode/.cache/uv,type=volume",
+        "source=dlms-cosem-antigravity,target=/home/vscode/.gemini,type=volume"
+    ],
+    "updateContentCommand": "sudo chown -R $(whoami): ${containerWorkspaceFolder}/.venv /home/vscode/.cache /home/vscode/.gemini",
     "postCreateCommand": "bash scripts/setup",
     "customizations": {
         "vscode": {
