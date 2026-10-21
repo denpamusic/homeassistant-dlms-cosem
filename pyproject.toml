@@ -34,7 +34,7 @@ microdlms = { path = "microdlms", editable = true }
 max-complexity-allowed = 15
 
 [tool.codespell]
-skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.venv,.vscode,build,*/translations/*.json,custom_components/dlms_cosem/dlms_flagids.json"
+skip = ".git,.mypy_cache,.pytest_cache,.ruff_cache,.venv,.vscode,build,microdlms,*/translations/*.json,*dlms_flagids.json"
 ignore-words-list = "hass"
 
 [tool.mypy]
