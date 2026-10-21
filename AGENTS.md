@@ -61,7 +61,7 @@ Manual for AI agents working on `homeassistant-dlms-cosem`. Read fully before ch
 4.1. Feature work must be done on dedicated feature branches (`feature/<feature-name>`).
 
 4.2. Commit message format:
-- Always prefix with `[ai] ` (e.g., `[ai] Migrate integration tooling to uv.`).
+- Always prefix with `[ai] ` for autonomous changes or `[human+ai] ` for collaborative changes (e.g., `[ai] Migrate integration tooling to uv.`).
 - Under 50 characters long (including prefix).
 - End in a full stop (`.`).
 

@@ -19,7 +19,8 @@
           "password": "Password",
           "physical_address": "Physical address",
           "port": "Port",
-          "read_delay": "Read delay (ms)"
+          "read_delay": "Read delay (ms)",
+          "read_timeout": "Read timeout (s)"
         }
       },
       "user": {
@@ -27,7 +28,8 @@
           "password": "Password",
           "physical_address": "Physical address",
           "port": "Port",
-          "read_delay": "Read delay (ms)"
+          "read_delay": "Read delay (ms)",
+          "read_timeout": "Read timeout (s)"
         }
       }
     }

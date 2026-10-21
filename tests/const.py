@@ -12,6 +12,7 @@ from custom_components.dlms_cosem.const import (
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
+    CONF_READ_TIMEOUT,
 )
 
 ATTR_EQUIPMENT_ID: Final = "equipment_id"
@@ -24,6 +25,7 @@ MOCK_CONFIG_DATA: Final[dict[str, Any]] = {
     CONF_PASSWORD: "111111",
     CONF_PHYSICAL_ADDRESS: 1,
     CONF_READ_DELAY: 250,
+    CONF_READ_TIMEOUT: 10,
 }
 
 MOCK_DEVICE_DATA: Final[dict[str, Any]] = {

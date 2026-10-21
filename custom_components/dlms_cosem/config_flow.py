@@ -25,11 +25,14 @@ from .const import (
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
+    CONF_READ_TIMEOUT,
     COSEM_EQUIPMENT_ID,
     COSEM_LOGICAL_DEVICE_NAME,
     COSEM_SOFTWARE_PACKAGE,
     DEFAULT_PASSWORD,
+    DEFAULT_PHYSICAL_ADDRESS,
     DEFAULT_READ_DELAY,
+    DEFAULT_READ_TIMEOUT,
     DOMAIN,
 )
 from .dlms_cosem import (
@@ -46,6 +49,9 @@ STEP_USER_DATA_SCHEMA = probatio.Schema(
         probatio.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): probatio.All(
             probatio.Coerce(int), probatio.Range(min=50, max=500)
         ),
+        probatio.Required(
+            CONF_READ_TIMEOUT, default=DEFAULT_READ_TIMEOUT
+        ): probatio.All(probatio.Coerce(int), probatio.Range(min=5, max=20)),
     }
 )
 
@@ -66,7 +72,7 @@ async def validate_input(
         client = await async_get_dlms_client(
             port=data[CONF_PORT],
             password=data.get(CONF_PASSWORD, DEFAULT_PASSWORD),
-            physical_address=data.get(CONF_PHYSICAL_ADDRESS, 1),
+            physical_address=data.get(CONF_PHYSICAL_ADDRESS, DEFAULT_PHYSICAL_ADDRESS),
         )
     except CONNECTION_ERRORS as err:
         raise CannotConnect from err

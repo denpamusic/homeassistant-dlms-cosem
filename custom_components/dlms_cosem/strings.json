@@ -19,7 +19,8 @@
           "password": "[%key:common::config_flow::data::password%]",
           "physical_address": "Physical address",
           "port": "[%key:common::config_flow::data::port%]",
-          "read_delay": "Read delay (ms)"
+          "read_delay": "Read delay (ms)",
+          "read_timeout": "Read timeout (s)"
         }
       },
       "user": {
@@ -27,7 +28,8 @@
           "password": "[%key:common::config_flow::data::password%]",
           "physical_address": "Physical address",
           "port": "[%key:common::config_flow::data::port%]",
-          "read_delay": "Read delay (ms)"
+          "read_delay": "Read delay (ms)",
+          "read_timeout": "Read timeout (s)"
         }
       }
     }

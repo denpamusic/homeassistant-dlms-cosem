@@ -10,8 +10,12 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.dlms_cosem.const import (
+    CONF_READ_TIMEOUT,
     COSEM_EQUIPMENT_ID,
     DEFAULT_MODEL,
+    DEFAULT_PHYSICAL_ADDRESS,
+    DEFAULT_READ_DELAY,
+    DEFAULT_READ_TIMEOUT,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
 )
@@ -148,6 +152,16 @@ async def test_async_get_dlms_client() -> None:
         )
         mock_async_client.connect.assert_awaited_once()
 
+        # Test defaults
+        mock_cls.reset_mock()
+        await async_get_dlms_client(port="/dev/ttyUSB0")
+        mock_cls.assert_called_once_with(
+            port="/dev/ttyUSB0",
+            password="111111",
+            server_physical_address=DEFAULT_PHYSICAL_ADDRESS,
+            timeout=DEFAULT_READ_TIMEOUT,
+        )
+
 
 async def test_dlms_connection_lifecycle(hass: HomeAssistant) -> None:
     """Test DlmsConnection connection, properties, and disconnection."""
@@ -158,7 +172,7 @@ async def test_dlms_connection_lifecycle(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
 
-    conn = DlmsConnection(hass, entry, read_timeout=5)
+    conn = DlmsConnection(hass, entry)
 
     assert bool(conn.connected) is False
     assert conn.dlms_state == "disconnected"
@@ -166,6 +180,7 @@ async def test_dlms_connection_lifecycle(hass: HomeAssistant) -> None:
     assert conn.password == "111111"
     assert conn.physical_address == 1
     assert conn.read_delay == 250
+    assert conn.read_timeout == 10
     assert conn.manufacturer == "Incotex"
     assert conn.model == "Mercury 236"
     assert conn.sw_version == "1.0.0"
@@ -190,7 +205,7 @@ async def test_dlms_connection_lifecycle(hass: HomeAssistant) -> None:
             port="/dev/ttyUSB0",
             password="111111",
             physical_address=1,
-            timeout=5,
+            timeout=10,
         )
 
         # Calling connect again when already connected is a no-op
@@ -218,7 +233,7 @@ async def test_dlms_connection_async_get(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
 
-    conn = DlmsConnection(hass, entry, read_timeout=5)
+    conn = DlmsConnection(hass, entry)
 
     # When client is not connected, async_get returns None
     assert await conn.async_get(COSEM_EQUIPMENT_ID) is None
@@ -258,10 +273,10 @@ async def test_dlms_connection_async_get(hass: HomeAssistant) -> None:
 
 
 async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
-    """Test DlmsConnection retries configuration and async_get total timeout calculation."""
+    """Test DlmsConnection retries configuration and async_get timeout."""
     entry = MockConfigEntry(
         domain="dlms_cosem",
-        data=dict(MOCK_ENTRY_DATA),
+        data={**MOCK_ENTRY_DATA, CONF_READ_TIMEOUT: 15},
         unique_id="12345678",
     )
     entry.add_to_hass(hass)
@@ -269,12 +284,12 @@ async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
     conn = DlmsConnection(
         hass=hass,
         entry=entry,
-        read_timeout=5,
         retries=2,
         retry_delay=0.5,
     )
     assert conn._retries == 2
     assert conn._retry_delay == 0.5
+    assert conn.read_timeout == 15
 
     # Check defaults
     conn_default = DlmsConnection(
@@ -288,9 +303,17 @@ async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
     mock_async.get = AsyncMock(return_value=1)
     conn.client = mock_async
 
-    with patch("asyncio.timeout") as mock_timeout:
-        mock_timeout.return_value.__aenter__ = AsyncMock()
-        mock_timeout.return_value.__aexit__ = AsyncMock()
-        await conn.async_get(COSEM_EQUIPMENT_ID)
-        # Expected total_timeout: 5 * (2 + 1) + (0.5 * 2) + 2 = 15 + 1.0 + 2 = 18.0
-        mock_timeout.assert_called_once_with(18.0)
+    await conn.async_get(COSEM_EQUIPMENT_ID)
+    mock_async.get.assert_awaited_once_with(
+        COSEM_EQUIPMENT_ID,
+        retries=2,
+        retry_delay=0.5,
+        timeout=15,
+    )
+
+    # Test default fallback when entry data is missing values
+    entry_empty = MockConfigEntry(domain="dlms_cosem", data={})
+    conn_empty = DlmsConnection(hass=hass, entry=entry_empty)
+    assert conn_empty.physical_address == DEFAULT_PHYSICAL_ADDRESS
+    assert conn_empty.read_delay == DEFAULT_READ_DELAY
+    assert conn_empty.read_timeout == DEFAULT_READ_TIMEOUT

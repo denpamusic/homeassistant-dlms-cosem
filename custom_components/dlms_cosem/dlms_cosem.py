@@ -31,9 +31,12 @@ from .const import (
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
+    CONF_READ_TIMEOUT,
     DEFAULT_MODEL,
     DEFAULT_PASSWORD,
+    DEFAULT_PHYSICAL_ADDRESS,
     DEFAULT_READ_DELAY,
+    DEFAULT_READ_TIMEOUT,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
 )
@@ -41,7 +44,6 @@ from .const import (
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 
-READ_TIMEOUT: Final = 10  # seconds
 DISCONNECT_DELAY: Final = 3  # seconds
 DISCONNECT_TIMEOUT: Final = 5  # seconds
 
@@ -126,8 +128,8 @@ def parse_dlms_datetime(data: bytes | None) -> dt.datetime | None:
 async def async_get_dlms_client(
     port: str,
     password: str = DEFAULT_PASSWORD,
-    physical_address: int = 1,
-    timeout: int = READ_TIMEOUT,
+    physical_address: int = DEFAULT_PHYSICAL_ADDRESS,
+    timeout: int = DEFAULT_READ_TIMEOUT,
 ) -> AsyncMeterClient:
     """Create and connect a DLMS AsyncMeterClient."""
     client = AsyncMeterClient(
@@ -143,7 +145,6 @@ async def async_get_dlms_client(
 class DlmsConnection:
     """Represents a DLMS connection."""
 
-    _read_timeout: int = READ_TIMEOUT
     _retries: int = DEFAULT_RETRIES
     _retry_delay: float = DEFAULT_RETRY_DELAY
     client: AsyncMeterClient | None
@@ -156,14 +157,12 @@ class DlmsConnection:
         hass: HomeAssistant,
         entry: ConfigEntry,
         *,
-        read_timeout: int = READ_TIMEOUT,
         retries: int = DEFAULT_RETRIES,
         retry_delay: float = DEFAULT_RETRY_DELAY,
     ) -> None:
         """Initialize a new DLMS/COSEM connection."""
         self.entry = entry
         self.hass = hass
-        self._read_timeout = read_timeout
         self._retries = retries
         self._retry_delay = retry_delay
         self.client = None
@@ -182,12 +181,19 @@ class DlmsConnection:
     @cached_property
     def physical_address(self) -> int:
         """Return the physical address."""
-        return cast(int, self.entry.data.get(CONF_PHYSICAL_ADDRESS, 1))
+        return cast(
+            int, self.entry.data.get(CONF_PHYSICAL_ADDRESS, DEFAULT_PHYSICAL_ADDRESS)
+        )
 
     @cached_property
     def read_delay(self) -> int:
         """Return the read delay in milliseconds."""
         return cast(int, self.entry.data.get(CONF_READ_DELAY, DEFAULT_READ_DELAY))
+
+    @cached_property
+    def read_timeout(self) -> int:
+        """Return the read attempt timeout in seconds."""
+        return cast(int, self.entry.data.get(CONF_READ_TIMEOUT, DEFAULT_READ_TIMEOUT))
 
     @cached_property
     def manufacturer(self) -> str:
@@ -216,7 +222,7 @@ class DlmsConnection:
                 port=self.port,
                 password=self.password,
                 physical_address=self.physical_address,
-                timeout=self._read_timeout,
+                timeout=self.read_timeout,
             )
             self.statistics.reset_transfer_statistics()
 
@@ -226,18 +232,13 @@ class DlmsConnection:
             return None
 
         self.statistics.requests_count += 1
-        total_timeout = (
-            self._read_timeout * (self._retries + 1)
-            + (self._retry_delay * self._retries)
-            + 2
-        )
         try:
-            async with asyncio.timeout(total_timeout):
-                result = await self.client.get(
-                    attribute,
-                    retries=self._retries,
-                    retry_delay=self._retry_delay,
-                )
+            result = await self.client.get(
+                attribute,
+                retries=self._retries,
+                retry_delay=self._retry_delay,
+                timeout=self.read_timeout,
+            )
             self.statistics.successful_reads += 1
             await asyncio.sleep(self.read_delay / 1000)
             return result

@@ -17,12 +17,15 @@ CONF_PASSWORD: Final = "password"
 CONF_PHYSICAL_ADDRESS: Final = "physical_address"
 CONF_PORT: Final = "port"
 CONF_READ_DELAY: Final = "read_delay"
+CONF_READ_TIMEOUT: Final = "read_timeout"
 
 # Defaults
 DEFAULT_ATTRIBUTE: Final = 2
 DEFAULT_MODEL: Final = "Smart meter"
 DEFAULT_PASSWORD: Final = "111111"
+DEFAULT_PHYSICAL_ADDRESS: Final = 1
 DEFAULT_READ_DELAY: Final = 250  # milliseconds
+DEFAULT_READ_TIMEOUT: Final = 10  # seconds
 DEFAULT_RETRIES: Final = 3
 DEFAULT_RETRY_DELAY: Final = 0.5  # seconds
 DEFAULT_SCAN_INTERVAL: Final = timedelta(seconds=30)
