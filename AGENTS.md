@@ -10,6 +10,8 @@ Manual for AI agents working on `homeassistant-dlms-cosem`. Read fully before ch
 
 1.3. Targeting modern Home Assistant standards (Python 3.14+). Minimum test coverage requirement is 90% branch coverage across `custom_components/dlms_cosem`.
 
+1.4. The single source of truth for version and dependency definitions is `pyproject.toml`. `manifest.json` and `hacs.json` are synchronized automatically via `scripts/sync_manifest.py`.
+
 ## 2. Tooling & Environment
 
 2.1. Environment and dependencies are managed exclusively with `uv`. Never run bare `pip` or `tox`.
@@ -19,6 +21,7 @@ Manual for AI agents working on `homeassistant-dlms-cosem`. Read fully before ch
 - `uv run prek run --all-files`: Run all git hooks (format, lint, spellcheck, complexity, types).
 - `uv run pytest`: Run test suite with branch coverage enforcement (>=90%).
 - `uv run python scripts/sync_translations.py --sort`: Sync and sort translations after editing `strings.json`.
+- `uv run python scripts/sync_manifest.py`: Synchronize `manifest.json` and `hacs.json` from `pyproject.toml`.
 
 ## 3. Code Standards & Architecture
 

@@ -37,3 +37,6 @@ jobs:
       - name: Check translations
         run: uv run python scripts/sync_translations.py --check
 
+      - name: Check manifest and hacs sync
+        run: uv run python scripts/sync_manifest.py --check
+

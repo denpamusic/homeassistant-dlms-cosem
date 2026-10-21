@@ -50,3 +50,11 @@ entry = "uv run python scripts/sync_translations.py --sort"
 language = "system"
 pass_filenames = false
 files = '^custom_components/dlms_cosem/(strings\.json|translations/.*\.json)$'
+
+[[repos.hooks]]
+id = "sync-manifest"
+name = "sync manifest"
+entry = "uv run python scripts/sync_manifest.py"
+language = "system"
+pass_filenames = false
+files = '^(pyproject\.toml|custom_components/dlms_cosem/manifest\.json|hacs\.json)$'
