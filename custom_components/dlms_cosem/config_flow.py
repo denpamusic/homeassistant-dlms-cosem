@@ -46,12 +46,10 @@ STEP_USER_DATA_SCHEMA = probatio.Schema(
         probatio.Required(CONF_PORT): SerialPortSelector(),
         probatio.Required(CONF_PHYSICAL_ADDRESS): cv.positive_int,
         probatio.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
-        probatio.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): probatio.All(
-            probatio.Coerce(int), probatio.Range(min=50, max=500)
-        ),
+        probatio.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): cv.positive_int,
         probatio.Required(
             CONF_READ_TIMEOUT, default=DEFAULT_READ_TIMEOUT
-        ): probatio.All(probatio.Coerce(int), probatio.Range(min=5, max=20)),
+        ): cv.positive_int,
     }
 )
 
