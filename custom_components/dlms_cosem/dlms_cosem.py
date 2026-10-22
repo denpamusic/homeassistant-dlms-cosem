@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-from contextlib import suppress
 from dataclasses import dataclass
 import datetime as dt
 from functools import cache, cached_property
@@ -45,7 +44,6 @@ LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 
 DISCONNECT_DELAY: Final = dt.timedelta(seconds=3)
-DISCONNECT_TIMEOUT: Final = dt.timedelta(seconds=5)
 
 CONNECTION_ERRORS = (CommunicationError, ProtocolError, TimeoutError, OSError)
 
@@ -254,9 +252,7 @@ class DlmsConnection:
     async def async_disconnect(self) -> None:
         """Disconnect the connection."""
         if self.client:
-            with suppress(Exception):
-                async with asyncio.timeout(DISCONNECT_TIMEOUT.total_seconds()):
-                    await self.client.disconnect()
+            await self.client.disconnect()
             self.client = None
             await asyncio.sleep(DISCONNECT_DELAY.total_seconds())
 
