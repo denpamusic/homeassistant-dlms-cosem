@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import MutableMapping
+from datetime import timedelta
 import logging
 from operator import itemgetter
 from typing import Any, Final, cast
@@ -54,7 +55,7 @@ STEP_USER_DATA_SCHEMA = probatio.Schema(
 )
 
 DEVICE_INFO_GETTER = itemgetter(ATTR_MANUFACTURER, ATTR_MODEL, ATTR_EQUIPMENT_ID)
-IDENTIFY_TIMEOUT: Final = 10  # seconds
+IDENTIFY_TIMEOUT: Final = timedelta(seconds=10)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -175,7 +176,9 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
             )
 
         try:
-            await asyncio.wait_for(self.identify_task, timeout=IDENTIFY_TIMEOUT)
+            await asyncio.wait_for(
+                self.identify_task, timeout=IDENTIFY_TIMEOUT.total_seconds()
+            )
         except (TimeoutError, CommunicationError) as err:
             _LOGGER.error(err)
             return self.async_show_progress_done(next_step_id="identify_failed")

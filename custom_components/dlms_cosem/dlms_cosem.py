@@ -44,8 +44,8 @@ from .const import (
 LOGICAL_CLIENT_ADDRESS: Final = 32
 LOGICAL_SERVER_ADDRESS: Final = 1
 
-DISCONNECT_DELAY: Final = 3  # seconds
-DISCONNECT_TIMEOUT: Final = 5  # seconds
+DISCONNECT_DELAY: Final = dt.timedelta(seconds=3)
+DISCONNECT_TIMEOUT: Final = dt.timedelta(seconds=5)
 
 CONNECTION_ERRORS = (CommunicationError, ProtocolError, TimeoutError, OSError)
 
@@ -255,10 +255,10 @@ class DlmsConnection:
         """Disconnect the connection."""
         if self.client:
             with suppress(Exception):
-                async with asyncio.timeout(DISCONNECT_TIMEOUT):
+                async with asyncio.timeout(DISCONNECT_TIMEOUT.total_seconds()):
                     await self.client.disconnect()
             self.client = None
-            await asyncio.sleep(DISCONNECT_DELAY)
+            await asyncio.sleep(DISCONNECT_DELAY.total_seconds())
 
     @property
     def connected(self) -> bool:
