@@ -10,7 +10,11 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.dlms_cosem.const import (
+    CONF_HARDWARE_INTERFACE,
+    CONF_READ_DELAY,
     CONF_READ_TIMEOUT,
+    CONF_RETRIES,
+    CONF_RETRY_DELAY,
     COSEM_EQUIPMENT_ID,
     DEFAULT_MODEL,
     DEFAULT_PHYSICAL_ADDRESS,
@@ -18,8 +22,10 @@ from custom_components.dlms_cosem.const import (
     DEFAULT_READ_TIMEOUT,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
+    HardwareInterface,
 )
 from custom_components.dlms_cosem.dlms_cosem import (
+    INTERFACE_CONFIG,
     NEVER,
     DlmsConnection,
     DlmsStatistics,
@@ -179,8 +185,9 @@ async def test_dlms_connection_lifecycle(hass: HomeAssistant) -> None:
     assert conn.port == "/dev/ttyUSB0"
     assert conn.password == "111111"
     assert conn.physical_address == 1
-    assert conn.read_delay == 250
-    assert conn.read_timeout == 10
+    assert conn.hardware_config == INTERFACE_CONFIG[HardwareInterface.OPTICAL]
+    assert conn.read_delay == 0.25
+    assert conn.read_timeout == 5
     assert conn.manufacturer == "Incotex"
     assert conn.model == "Mercury 236"
     assert conn.sw_version == "1.0.0"
@@ -205,7 +212,7 @@ async def test_dlms_connection_lifecycle(hass: HomeAssistant) -> None:
             port="/dev/ttyUSB0",
             password="111111",
             physical_address=1,
-            timeout=10,
+            timeout=5,
         )
 
         # Calling connect again when already connected is a no-op
@@ -311,9 +318,45 @@ async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
         timeout=15,
     )
 
-    # Test default fallback when entry data is missing values
+    # Test default fallback when entry data is missing values (defaults to OPTICAL)
     entry_empty = MockConfigEntry(domain="dlms_cosem", data={})
     conn_empty = DlmsConnection(hass=hass, entry=entry_empty)
     assert conn_empty.physical_address == DEFAULT_PHYSICAL_ADDRESS
-    assert conn_empty.read_delay == DEFAULT_READ_DELAY
-    assert conn_empty.read_timeout == DEFAULT_READ_TIMEOUT
+    assert conn_empty.read_delay == 0.25
+    assert conn_empty.read_timeout == 5
+
+    # Test fallback when hardware interface is unknown
+    entry_unknown_hw = MockConfigEntry(
+        domain="dlms_cosem",
+        data={CONF_HARDWARE_INTERFACE: "unknown"},
+    )
+    conn_unknown_hw = DlmsConnection(hass=hass, entry=entry_unknown_hw)
+    assert conn_unknown_hw.hardware_config is None
+    assert conn_unknown_hw.read_delay == DEFAULT_READ_DELAY
+    assert conn_unknown_hw.read_timeout == DEFAULT_READ_TIMEOUT
+
+    # Test options overriding
+    entry_with_options = MockConfigEntry(
+        domain="dlms_cosem",
+        data={**MOCK_ENTRY_DATA, CONF_RETRIES: 4, CONF_RETRY_DELAY: 1.5},
+        options={
+            CONF_READ_DELAY: 0.1,
+            CONF_READ_TIMEOUT: 7.0,
+            CONF_RETRIES: 5,
+            CONF_RETRY_DELAY: 2.0,
+        },
+    )
+    conn_options = DlmsConnection(hass=hass, entry=entry_with_options)
+    assert conn_options.read_delay == 0.1
+    assert conn_options.read_timeout == 7.0
+    assert conn_options.retries == 5
+    assert conn_options.retry_delay == 2.0
+
+    # Test fallback to entry.data for retries and retry_delay
+    entry_data_retries = MockConfigEntry(
+        domain="dlms_cosem",
+        data={**MOCK_ENTRY_DATA, CONF_RETRIES: 4, CONF_RETRY_DELAY: 1.5},
+    )
+    conn_data_retries = DlmsConnection(hass=hass, entry=entry_data_retries)
+    assert conn_data_retries.retries == 4
+    assert conn_data_retries.retry_delay == 1.5

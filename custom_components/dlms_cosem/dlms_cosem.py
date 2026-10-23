@@ -26,11 +26,15 @@ from microdlms import (
 
 from .const import (
     ATTR_EQUIPMENT_ID,
+    CONF_HARDWARE_INTERFACE,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
     CONF_READ_TIMEOUT,
+    CONF_RETRIES,
+    CONF_RETRY_DELAY,
+    DEFAULT_HARDWARE_INTERFACE,
     DEFAULT_MODEL,
     DEFAULT_PASSWORD,
     DEFAULT_PHYSICAL_ADDRESS,
@@ -38,6 +42,7 @@ from .const import (
     DEFAULT_READ_TIMEOUT,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
+    HardwareInterface,
 )
 
 LOGICAL_CLIENT_ADDRESS: Final = 32
@@ -127,7 +132,7 @@ async def async_get_dlms_client(
     port: str,
     password: str = DEFAULT_PASSWORD,
     physical_address: int = DEFAULT_PHYSICAL_ADDRESS,
-    timeout: int = DEFAULT_READ_TIMEOUT,
+    timeout: float = DEFAULT_READ_TIMEOUT,
 ) -> AsyncMeterClient:
     """Create and connect a DLMS AsyncMeterClient."""
     client = AsyncMeterClient(
@@ -138,6 +143,22 @@ async def async_get_dlms_client(
     )
     await client.connect()
     return client
+
+
+@dataclass(frozen=True, kw_only=True)
+class HardwareConfig:
+    """Represents timeout and delay config for hardware interface."""
+
+    timeout: float  # seconds
+    delay: float = 0.0  # seconds
+
+
+INTERFACE_CONFIG: dict[HardwareInterface, HardwareConfig] = {
+    HardwareInterface.OPTICAL: HardwareConfig(timeout=5, delay=0.25),
+    HardwareInterface.RS485: HardwareConfig(timeout=1, delay=0.05),
+    HardwareInterface.ETHERNET: HardwareConfig(timeout=0.5),
+    HardwareInterface.CELLULAR: HardwareConfig(timeout=10.0),
+}
 
 
 class DlmsConnection:
@@ -184,14 +205,61 @@ class DlmsConnection:
         )
 
     @cached_property
-    def read_delay(self) -> int:
-        """Return the read delay in milliseconds."""
-        return cast(int, self.entry.data.get(CONF_READ_DELAY, DEFAULT_READ_DELAY))
+    def hardware_config(self) -> HardwareConfig | None:
+        """Return the hardware configuration."""
+        hardware_interface = cast(
+            HardwareInterface,
+            self.entry.data.get(CONF_HARDWARE_INTERFACE, DEFAULT_HARDWARE_INTERFACE),
+        )
+        return INTERFACE_CONFIG.get(hardware_interface)
 
-    @cached_property
-    def read_timeout(self) -> int:
+    @property
+    def read_delay(self) -> float:
+        """Return the read delay in seconds."""
+        if read_delay := self.entry.options.get(
+            CONF_READ_DELAY, self.entry.data.get(CONF_READ_DELAY)
+        ):
+            return cast(float, read_delay)
+
+        if self.hardware_config:
+            return self.hardware_config.delay
+
+        return DEFAULT_READ_DELAY
+
+    @property
+    def read_timeout(self) -> float:
         """Return the read attempt timeout in seconds."""
-        return cast(int, self.entry.data.get(CONF_READ_TIMEOUT, DEFAULT_READ_TIMEOUT))
+        if read_timeout := self.entry.options.get(
+            CONF_READ_TIMEOUT, self.entry.data.get(CONF_READ_TIMEOUT)
+        ):
+            return cast(float, read_timeout)
+
+        if self.hardware_config:
+            return self.hardware_config.timeout
+
+        return DEFAULT_READ_TIMEOUT
+
+    @property
+    def retries(self) -> int:
+        """Return the number of retries."""
+        return cast(
+            int,
+            self.entry.options.get(
+                CONF_RETRIES,
+                self.entry.data.get(CONF_RETRIES, self._retries),
+            ),
+        )
+
+    @property
+    def retry_delay(self) -> float:
+        """Return the retry delay in seconds."""
+        return cast(
+            float,
+            self.entry.options.get(
+                CONF_RETRY_DELAY,
+                self.entry.data.get(CONF_RETRY_DELAY, self._retry_delay),
+            ),
+        )
 
     @cached_property
     def manufacturer(self) -> str:
@@ -233,12 +301,12 @@ class DlmsConnection:
         try:
             result = await self.client.get(
                 attribute,
-                retries=self._retries,
-                retry_delay=self._retry_delay,
+                retries=self.retries,
+                retry_delay=self.retry_delay,
                 timeout=self.read_timeout,
             )
             self.statistics.successful_reads += 1
-            await asyncio.sleep(self.read_delay / 1000)
+            await asyncio.sleep(self.read_delay)
             return result
         except DataAccessError:
             self.statistics.failed_reads += 1

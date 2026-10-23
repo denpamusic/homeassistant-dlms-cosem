@@ -9,12 +9,23 @@ import logging
 from operator import itemgetter
 from typing import Any, Final, cast
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+    OptionsFlowWithConfigEntry,
+)
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.selector import SerialPortSelector
+from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    SerialPortSelector,
+)
 import probatio
 
 from microdlms import AsyncMeterClient, CommunicationError
@@ -22,22 +33,29 @@ from microdlms import AsyncMeterClient, CommunicationError
 from . import DlmsCosemConfigEntry
 from .const import (
     ATTR_EQUIPMENT_ID,
+    CONF_HARDWARE_INTERFACE,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
     CONF_READ_TIMEOUT,
+    CONF_RETRIES,
+    CONF_RETRY_DELAY,
     COSEM_EQUIPMENT_ID,
     COSEM_LOGICAL_DEVICE_NAME,
     COSEM_SOFTWARE_PACKAGE,
+    DEFAULT_HARDWARE_INTERFACE,
     DEFAULT_PASSWORD,
     DEFAULT_PHYSICAL_ADDRESS,
     DEFAULT_READ_DELAY,
     DEFAULT_READ_TIMEOUT,
+    DEFAULT_RETRIES,
+    DEFAULT_RETRY_DELAY,
     DOMAIN,
 )
 from .dlms_cosem import (
     CONNECTION_ERRORS,
+    INTERFACE_CONFIG,
     async_decode_logical_device_name,
     async_get_dlms_client,
 )
@@ -47,10 +65,9 @@ STEP_USER_DATA_SCHEMA = probatio.Schema(
         probatio.Required(CONF_PORT): SerialPortSelector(),
         probatio.Required(CONF_PHYSICAL_ADDRESS): cv.positive_int,
         probatio.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
-        probatio.Required(CONF_READ_DELAY, default=DEFAULT_READ_DELAY): cv.positive_int,
         probatio.Required(
-            CONF_READ_TIMEOUT, default=DEFAULT_READ_TIMEOUT
-        ): cv.positive_int,
+            CONF_HARDWARE_INTERFACE, default=DEFAULT_HARDWARE_INTERFACE
+        ): probatio.In(list(INTERFACE_CONFIG)),
     }
 )
 
@@ -67,11 +84,17 @@ async def validate_input(
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
+    hardware_interface = data.get(CONF_HARDWARE_INTERFACE, DEFAULT_HARDWARE_INTERFACE)
+    hardware_config = INTERFACE_CONFIG.get(hardware_interface)
+    timeout = data.get(CONF_READ_TIMEOUT) or (
+        hardware_config.timeout if hardware_config else DEFAULT_READ_TIMEOUT
+    )
     try:
         client = await async_get_dlms_client(
             port=data[CONF_PORT],
             password=data.get(CONF_PASSWORD, DEFAULT_PASSWORD),
             physical_address=data.get(CONF_PHYSICAL_ADDRESS, DEFAULT_PHYSICAL_ADDRESS),
+            timeout=timeout,
         )
     except CONNECTION_ERRORS as err:
         raise CannotConnect from err
@@ -84,6 +107,13 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     MINOR_VERSION = 3
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> OptionsFlow:
+        """Create the options flow."""
+        return DlmsCosemOptionsFlowHandler(config_entry)
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -143,7 +173,6 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
                     await self.async_set_unique_id(equipment_id)
                     self._abort_if_unique_id_mismatch(reason="unique_id_mismatch")
                     await client.disconnect()
-                    await asyncio.sleep(user_input[CONF_READ_DELAY] / 1000)
                     return self.async_update_reload_and_abort(
                         entry, data_updates=user_input
                     )
@@ -231,6 +260,80 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
                 ATTR_MODEL: model,
                 ATTR_SW_VERSION: sw_version,
             }
+        )
+
+
+class DlmsCosemOptionsFlowHandler(OptionsFlowWithConfigEntry):
+    """Handle DLMS/COSEM options."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        hardware_interface = self.config_entry.data.get(
+            CONF_HARDWARE_INTERFACE, DEFAULT_HARDWARE_INTERFACE
+        )
+        hardware_config = INTERFACE_CONFIG.get(hardware_interface)
+        default_delay = self.config_entry.data.get(CONF_READ_DELAY) or (
+            hardware_config.delay if hardware_config else DEFAULT_READ_DELAY
+        )
+        default_timeout = self.config_entry.data.get(CONF_READ_TIMEOUT) or (
+            hardware_config.timeout if hardware_config else DEFAULT_READ_TIMEOUT
+        )
+        default_retries = self.config_entry.data.get(CONF_RETRIES, DEFAULT_RETRIES)
+        default_retry_delay = self.config_entry.data.get(
+            CONF_RETRY_DELAY, DEFAULT_RETRY_DELAY
+        )
+
+        options_schema = probatio.Schema(
+            {
+                probatio.Required(
+                    CONF_READ_DELAY,
+                    default=self.config_entry.options.get(
+                        CONF_READ_DELAY, default_delay
+                    ),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0.0, step=0.01, mode=NumberSelectorMode.BOX
+                    )
+                ),
+                probatio.Required(
+                    CONF_READ_TIMEOUT,
+                    default=self.config_entry.options.get(
+                        CONF_READ_TIMEOUT, default_timeout
+                    ),
+                ): NumberSelector(
+                    NumberSelectorConfig(min=0.1, step=0.1, mode=NumberSelectorMode.BOX)
+                ),
+                probatio.Required(
+                    CONF_RETRIES,
+                    default=self.config_entry.options.get(
+                        CONF_RETRIES, default_retries
+                    ),
+                ): NumberSelector(
+                    NumberSelectorConfig(min=0, step=1, mode=NumberSelectorMode.BOX)
+                ),
+                probatio.Required(
+                    CONF_RETRY_DELAY,
+                    default=self.config_entry.options.get(
+                        CONF_RETRY_DELAY, default_retry_delay
+                    ),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0.0, step=0.01, mode=NumberSelectorMode.BOX
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                options_schema, user_input or self.config_entry.options
+            ),
         )
 
 

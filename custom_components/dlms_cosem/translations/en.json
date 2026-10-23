@@ -16,20 +16,18 @@
     "step": {
       "reconfigure": {
         "data": {
+          "hardware_interface": "Interface",
           "password": "Password",
           "physical_address": "Physical address",
-          "port": "Port",
-          "read_delay": "Read delay (ms)",
-          "read_timeout": "Read timeout (s)"
+          "port": "Port"
         }
       },
       "user": {
         "data": {
+          "hardware_interface": "Interface",
           "password": "Password",
           "physical_address": "Physical address",
-          "port": "Port",
-          "read_delay": "Read delay (ms)",
-          "read_timeout": "Read timeout (s)"
+          "port": "Port"
         }
       }
     }
@@ -135,6 +133,28 @@
       },
       "voltage_l3": {
         "name": "Voltage L3"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "read_delay": "Read delay (s)",
+          "read_timeout": "Read timeout (s)",
+          "retries": "Number of retries",
+          "retry_delay": "Retry delay (s)"
+        }
+      }
+    }
+  },
+  "selector": {
+    "hardware_interface": {
+      "options": {
+        "cellular": "Cellular",
+        "ethernet": "Ethernet",
+        "optical": "Optical",
+        "rs485": "RS-485"
       }
     }
   },

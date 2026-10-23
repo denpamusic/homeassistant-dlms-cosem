@@ -12,18 +12,23 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.dlms_cosem.config_flow import CannotConnect, validate_input
 from custom_components.dlms_cosem.const import (
+    CONF_HARDWARE_INTERFACE,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
+    CONF_READ_TIMEOUT,
+    CONF_RETRIES,
+    CONF_RETRY_DELAY,
     COSEM_EQUIPMENT_ID,
     COSEM_LOGICAL_DEVICE_NAME,
     COSEM_SOFTWARE_PACKAGE,
     DOMAIN,
+    HardwareInterface,
 )
 from microdlms import AsyncMeterClient, CommunicationError
 
-from .const import MOCK_CONFIG_DATA, MOCK_ENTRY_DATA
+from .const import MOCK_CONFIG_DATA, MOCK_ENTRY_DATA, MOCK_OPTIONS_DATA
 
 
 @pytest.fixture
@@ -330,7 +335,7 @@ async def test_flow_reconfigure_success(
         CONF_PORT: "/dev/ttyUSB1",
         CONF_PASSWORD: "new_password",
         CONF_PHYSICAL_ADDRESS: 2,
-        CONF_READ_DELAY: 300,
+        CONF_HARDWARE_INTERFACE: HardwareInterface.RS485,
     }
 
     with patch(
@@ -347,5 +352,77 @@ async def test_flow_reconfigure_success(
     assert mock_config_entry.data[CONF_PORT] == "/dev/ttyUSB1"
     assert mock_config_entry.data[CONF_PASSWORD] == "new_password"
     assert mock_config_entry.data[CONF_PHYSICAL_ADDRESS] == 2
-    assert mock_config_entry.data[CONF_READ_DELAY] == 300
+    assert mock_config_entry.data[CONF_HARDWARE_INTERFACE] == HardwareInterface.RS485
     mock_flow_client.disconnect.assert_awaited()
+
+
+async def test_options_flow_init(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """Test options flow initialization."""
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+
+async def test_options_flow_success(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """Test successful options flow configuration."""
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input=dict(MOCK_OPTIONS_DATA),
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == MOCK_OPTIONS_DATA
+
+
+async def test_options_flow_with_existing_options(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """Test options flow with already configured options."""
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={
+            CONF_READ_DELAY: 0.05,
+            CONF_READ_TIMEOUT: 2.0,
+            CONF_RETRIES: 5,
+            CONF_RETRY_DELAY: 1.0,
+        },
+    )
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+
+async def test_options_flow_with_legacy_and_unknown_hardware(
+    hass: HomeAssistant,
+) -> None:
+    """Test options flow fallbacks with legacy entry data and unknown hardware."""
+    entry_legacy = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_PORT: "/dev/ttyUSB0",
+            CONF_READ_DELAY: 0.12,
+            CONF_READ_TIMEOUT: 3.5,
+            CONF_RETRIES: 4,
+            CONF_RETRY_DELAY: 0.8,
+        },
+    )
+    entry_legacy.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry_legacy.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+    entry_unknown = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_PORT: "/dev/ttyUSB0",
+            CONF_HARDWARE_INTERFACE: "unknown_interface",
+        },
+    )
+    entry_unknown.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry_unknown.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"

@@ -16,20 +16,18 @@
     "step": {
       "reconfigure": {
         "data": {
+          "hardware_interface": "Интерфейс",
           "password": "Пароль",
           "physical_address": "Физический адрес",
-          "port": "Порт",
-          "read_delay": "Пауза между запросами (мс)",
-          "read_timeout": "Время ожидания ответа (с)"
+          "port": "Порт"
         }
       },
       "user": {
         "data": {
+          "hardware_interface": "Интерфейс",
           "password": "Пароль",
           "physical_address": "Физический адрес",
-          "port": "Порт",
-          "read_delay": "Пауза между запросами (мс)",
-          "read_timeout": "Время ожидания ответа (с)"
+          "port": "Порт"
         }
       }
     }
@@ -135,6 +133,28 @@
       },
       "voltage_l3": {
         "name": "Напряжение L3"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "read_delay": "Задержка чтения (с)",
+          "read_timeout": "Время ожидания ответа (с)",
+          "retries": "Количество попыток",
+          "retry_delay": "Задержка между попытками (с)"
+        }
+      }
+    }
+  },
+  "selector": {
+    "hardware_interface": {
+      "options": {
+        "cellular": "Сотовая связь",
+        "ethernet": "Ethernet",
+        "optical": "Оптический порт",
+        "rs485": "RS-485"
       }
     }
   },

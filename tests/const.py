@@ -8,11 +8,15 @@ from typing import Any, Final
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, ATTR_SW_VERSION
 
 from custom_components.dlms_cosem.const import (
+    CONF_HARDWARE_INTERFACE,
     CONF_PASSWORD,
     CONF_PHYSICAL_ADDRESS,
     CONF_PORT,
     CONF_READ_DELAY,
     CONF_READ_TIMEOUT,
+    CONF_RETRIES,
+    CONF_RETRY_DELAY,
+    HardwareInterface,
 )
 
 ATTR_EQUIPMENT_ID: Final = "equipment_id"
@@ -24,8 +28,14 @@ MOCK_CONFIG_DATA: Final[dict[str, Any]] = {
     CONF_PORT: "/dev/ttyUSB0",
     CONF_PASSWORD: "111111",
     CONF_PHYSICAL_ADDRESS: 1,
-    CONF_READ_DELAY: 250,
-    CONF_READ_TIMEOUT: 10,
+    CONF_HARDWARE_INTERFACE: HardwareInterface.OPTICAL,
+}
+
+MOCK_OPTIONS_DATA: Final[dict[str, Any]] = {
+    CONF_READ_DELAY: 0.1,
+    CONF_READ_TIMEOUT: 5.0,
+    CONF_RETRIES: 2,
+    CONF_RETRY_DELAY: 0.25,
 }
 
 MOCK_DEVICE_DATA: Final[dict[str, Any]] = {

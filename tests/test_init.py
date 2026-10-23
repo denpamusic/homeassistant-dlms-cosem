@@ -86,6 +86,38 @@ async def test_async_unload_entry(
     assert mock_config_entry.state == ConfigEntryState.NOT_LOADED
 
 
+async def test_async_update_options(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_connection: MagicMock,
+) -> None:
+    """Test updating options triggers reload."""
+    with patch(
+        "custom_components.dlms_cosem.DlmsConnection",
+        return_value=mock_connection,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+
+    with (
+        patch(
+            "custom_components.dlms_cosem.DlmsConnection",
+            return_value=mock_connection,
+        ),
+        patch.object(
+            hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
+        ) as mock_reload,
+    ):
+        hass.config_entries.async_update_entry(
+            mock_config_entry,
+            options={CONF_READ_DELAY: 0.5},
+        )
+        await hass.async_block_till_done()
+        mock_reload.assert_awaited_once_with(mock_config_entry.entry_id)
+
+
 async def test_async_migrate_entry(hass: HomeAssistant) -> None:
     """Test entry migration across versions."""
     # Major version > 1 should return False
