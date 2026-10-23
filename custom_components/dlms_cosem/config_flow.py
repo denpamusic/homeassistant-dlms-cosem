@@ -271,6 +271,7 @@ class DlmsCosemOptionsFlowHandler(OptionsFlowWithConfigEntry):
     ) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
+            user_input[CONF_RETRIES] = int(user_input[CONF_RETRIES])
             return self.async_create_entry(title="", data=user_input)
 
         hardware_interface = self.config_entry.data.get(

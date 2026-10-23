@@ -171,19 +171,10 @@ class DlmsConnection:
     hass: HomeAssistant
     statistics: DlmsStatistics
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        entry: ConfigEntry,
-        *,
-        retries: int = DEFAULT_RETRIES,
-        retry_delay: float = DEFAULT_RETRY_DELAY,
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize a new DLMS/COSEM connection."""
         self.entry = entry
         self.hass = hass
-        self._retries = retries
-        self._retry_delay = retry_delay
         self.client = None
         self.statistics = DlmsStatistics()
 
@@ -239,25 +230,25 @@ class DlmsConnection:
 
         return DEFAULT_READ_TIMEOUT
 
-    @property
+    @cached_property
     def retries(self) -> int:
         """Return the number of retries."""
         return cast(
             int,
             self.entry.options.get(
                 CONF_RETRIES,
-                self.entry.data.get(CONF_RETRIES, self._retries),
+                self.entry.data.get(CONF_RETRIES, DEFAULT_RETRIES),
             ),
         )
 
-    @property
+    @cached_property
     def retry_delay(self) -> float:
         """Return the retry delay in seconds."""
         return cast(
             float,
             self.entry.options.get(
                 CONF_RETRY_DELAY,
-                self.entry.data.get(CONF_RETRY_DELAY, self._retry_delay),
+                self.entry.data.get(CONF_RETRY_DELAY, DEFAULT_RETRY_DELAY),
             ),
         )
 

@@ -283,28 +283,30 @@ async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
     """Test DlmsConnection retries configuration and async_get timeout."""
     entry = MockConfigEntry(
         domain="dlms_cosem",
-        data={**MOCK_ENTRY_DATA, CONF_READ_TIMEOUT: 15},
+        data={
+            **MOCK_ENTRY_DATA,
+            CONF_READ_TIMEOUT: 15,
+            CONF_RETRIES: 2,
+            CONF_RETRY_DELAY: 0.5,
+        },
         unique_id="12345678",
     )
     entry.add_to_hass(hass)
 
-    conn = DlmsConnection(
-        hass=hass,
-        entry=entry,
-        retries=2,
-        retry_delay=0.5,
-    )
-    assert conn._retries == 2
-    assert conn._retry_delay == 0.5
+    conn = DlmsConnection(hass=hass, entry=entry)
+    assert conn.retries == 2
+    assert conn.retry_delay == 0.5
     assert conn.read_timeout == 15
 
     # Check defaults
-    conn_default = DlmsConnection(
-        hass=hass,
-        entry=entry,
+    entry_default = MockConfigEntry(
+        domain="dlms_cosem",
+        data=dict(MOCK_ENTRY_DATA),
+        unique_id="87654321",
     )
-    assert conn_default._retries == DEFAULT_RETRIES
-    assert conn_default._retry_delay == DEFAULT_RETRY_DELAY
+    conn_default = DlmsConnection(hass=hass, entry=entry_default)
+    assert conn_default.retries == DEFAULT_RETRIES
+    assert conn_default.retry_delay == DEFAULT_RETRY_DELAY
 
     mock_async = MagicMock()
     mock_async.get = AsyncMock(return_value=1)

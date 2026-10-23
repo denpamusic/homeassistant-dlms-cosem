@@ -370,12 +370,15 @@ async def test_options_flow_success(
 ) -> None:
     """Test successful options flow configuration."""
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    # NumberSelector sends float value for retries; ensure it is cast to int
+    user_input = {**MOCK_OPTIONS_DATA, CONF_RETRIES: 2.0}
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        user_input=dict(MOCK_OPTIONS_DATA),
+        user_input=user_input,
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == MOCK_OPTIONS_DATA
+    assert isinstance(result["data"][CONF_RETRIES], int)
 
 
 async def test_options_flow_with_existing_options(
