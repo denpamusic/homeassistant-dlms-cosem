@@ -26,6 +26,7 @@ from homeassistant.helpers.selector import (
     NumberSelectorMode,
     SerialPortSelector,
 )
+from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 import probatio
 
 from microdlms import AsyncMeterClient, CommunicationError
@@ -146,6 +147,27 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
 
+    def _get_reconfigure_options(
+        self, entry: DlmsCosemConfigEntry, user_input: dict[str, Any]
+    ) -> dict[str, Any] | UndefinedType:
+        """Return updated options if hardware interface changed during reconfigure."""
+        if not entry.options or user_input.get(
+            CONF_HARDWARE_INTERFACE
+        ) == entry.data.get(CONF_HARDWARE_INTERFACE):
+            return UNDEFINED
+
+        hardware_interface = user_input.get(
+            CONF_HARDWARE_INTERFACE, DEFAULT_HARDWARE_INTERFACE
+        )
+        if not (hardware_config := INTERFACE_CONFIG.get(hardware_interface)):
+            return UNDEFINED
+
+        return {
+            **entry.options,
+            CONF_READ_DELAY: hardware_config.delay,
+            CONF_READ_TIMEOUT: hardware_config.timeout,
+        }
+
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -174,7 +196,9 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
                     self._abort_if_unique_id_mismatch(reason="unique_id_mismatch")
                     await client.disconnect()
                     return self.async_update_reload_and_abort(
-                        entry, data_updates=user_input
+                        entry,
+                        data_updates=user_input,
+                        options=self._get_reconfigure_options(entry, user_input),
                     )
                 finally:
                     if client.is_connected:

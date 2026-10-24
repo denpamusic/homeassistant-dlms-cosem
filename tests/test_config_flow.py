@@ -7,10 +7,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.typing import UNDEFINED
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.dlms_cosem.config_flow import CannotConnect, validate_input
+from custom_components.dlms_cosem.config_flow import (
+    CannotConnect,
+    DlmsCosemConfigFlow,
+    validate_input,
+)
 from custom_components.dlms_cosem.const import (
     CONF_HARDWARE_INTERFACE,
     CONF_PASSWORD,
@@ -354,6 +359,104 @@ async def test_flow_reconfigure_success(
     assert mock_config_entry.data[CONF_PHYSICAL_ADDRESS] == 2
     assert mock_config_entry.data[CONF_HARDWARE_INTERFACE] == HardwareInterface.RS485
     mock_flow_client.disconnect.assert_awaited()
+
+
+async def test_flow_reconfigure_updates_existing_options(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_coordinator: MagicMock,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Test reconfigure updates existing options when interface changes."""
+    mock_config_entry.runtime_data = mock_coordinator
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={
+            CONF_READ_DELAY: 0.25,
+            CONF_READ_TIMEOUT: 5.0,
+            CONF_RETRIES: 4,
+            CONF_RETRY_DELAY: 1.0,
+        },
+    )
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    new_data = {
+        CONF_PORT: "/dev/ttyUSB0",
+        CONF_PASSWORD: "111111",
+        CONF_PHYSICAL_ADDRESS: 1,
+        CONF_HARDWARE_INTERFACE: HardwareInterface.RS485,
+    }
+
+    with patch(
+        "custom_components.dlms_cosem.config_flow.validate_input",
+        return_value=mock_flow_client,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input=new_data,
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.options[CONF_READ_DELAY] == 0.05
+    assert mock_config_entry.options[CONF_READ_TIMEOUT] == 1.0
+    assert mock_config_entry.options[CONF_RETRIES] == 4
+    assert mock_config_entry.options[CONF_RETRY_DELAY] == 1.0
+
+
+async def test_flow_reconfigure_preserves_options_if_interface_unchanged(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_coordinator: MagicMock,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Test reconfigure preserves existing options when interface is unchanged."""
+    mock_config_entry.runtime_data = mock_coordinator
+    initial_options = {
+        CONF_READ_DELAY: 0.35,
+        CONF_READ_TIMEOUT: 6.0,
+        CONF_RETRIES: 5,
+        CONF_RETRY_DELAY: 1.5,
+    }
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options=initial_options,
+    )
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    new_data = {
+        CONF_PORT: "/dev/ttyUSB1",
+        CONF_PASSWORD: "new_password",
+        CONF_PHYSICAL_ADDRESS: 1,
+        CONF_HARDWARE_INTERFACE: HardwareInterface.OPTICAL,
+    }
+
+    with patch(
+        "custom_components.dlms_cosem.config_flow.validate_input",
+        return_value=mock_flow_client,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input=new_data,
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.options == initial_options
+
+
+async def test_flow_reconfigure_unknown_interface_preserves_options(
+    hass: HomeAssistant,
+) -> None:
+    """Test _get_reconfigure_options returns UNDEFINED when interface is unknown."""
+    flow = DlmsCosemConfigFlow()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HARDWARE_INTERFACE: HardwareInterface.OPTICAL},
+        options={CONF_READ_DELAY: 0.25},
+    )
+    result = flow._get_reconfigure_options(entry, {CONF_HARDWARE_INTERFACE: "unknown"})
+    assert result is UNDEFINED
 
 
 async def test_options_flow_init(

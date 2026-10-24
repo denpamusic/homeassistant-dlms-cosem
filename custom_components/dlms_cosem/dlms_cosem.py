@@ -207,9 +207,7 @@ class DlmsConnection:
     @property
     def read_delay(self) -> float:
         """Return the read delay in seconds."""
-        if read_delay := self.entry.options.get(
-            CONF_READ_DELAY, self.entry.data.get(CONF_READ_DELAY)
-        ):
+        if read_delay := self.entry.options.get(CONF_READ_DELAY):
             return cast(float, read_delay)
 
         if self.hardware_config:
@@ -220,9 +218,7 @@ class DlmsConnection:
     @property
     def read_timeout(self) -> float:
         """Return the read attempt timeout in seconds."""
-        if read_timeout := self.entry.options.get(
-            CONF_READ_TIMEOUT, self.entry.data.get(CONF_READ_TIMEOUT)
-        ):
+        if read_timeout := self.entry.options.get(CONF_READ_TIMEOUT):
             return cast(float, read_timeout)
 
         if self.hardware_config:
@@ -233,23 +229,13 @@ class DlmsConnection:
     @cached_property
     def retries(self) -> int:
         """Return the number of retries."""
-        return cast(
-            int,
-            self.entry.options.get(
-                CONF_RETRIES,
-                self.entry.data.get(CONF_RETRIES, DEFAULT_RETRIES),
-            ),
-        )
+        return cast(int, self.entry.options.get(CONF_RETRIES, DEFAULT_RETRIES))
 
     @cached_property
     def retry_delay(self) -> float:
         """Return the retry delay in seconds."""
         return cast(
-            float,
-            self.entry.options.get(
-                CONF_RETRY_DELAY,
-                self.entry.data.get(CONF_RETRY_DELAY, DEFAULT_RETRY_DELAY),
-            ),
+            float, self.entry.options.get(CONF_RETRY_DELAY, DEFAULT_RETRY_DELAY)
         )
 
     @cached_property

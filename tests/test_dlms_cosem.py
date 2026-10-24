@@ -283,8 +283,9 @@ async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
     """Test DlmsConnection retries configuration and async_get timeout."""
     entry = MockConfigEntry(
         domain="dlms_cosem",
-        data={
-            **MOCK_ENTRY_DATA,
+        data=dict(MOCK_ENTRY_DATA),
+        options={
+            CONF_READ_DELAY: 0.1,
             CONF_READ_TIMEOUT: 15,
             CONF_RETRIES: 2,
             CONF_RETRY_DELAY: 0.5,
@@ -296,6 +297,7 @@ async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
     conn = DlmsConnection(hass=hass, entry=entry)
     assert conn.retries == 2
     assert conn.retry_delay == 0.5
+    assert conn.read_delay == 0.1
     assert conn.read_timeout == 15
 
     # Check defaults
@@ -353,12 +355,3 @@ async def test_dlms_connection_retries_and_timeout(hass: HomeAssistant) -> None:
     assert conn_options.read_timeout == 7.0
     assert conn_options.retries == 5
     assert conn_options.retry_delay == 2.0
-
-    # Test fallback to entry.data for retries and retry_delay
-    entry_data_retries = MockConfigEntry(
-        domain="dlms_cosem",
-        data={**MOCK_ENTRY_DATA, CONF_RETRIES: 4, CONF_RETRY_DELAY: 1.5},
-    )
-    conn_data_retries = DlmsConnection(hass=hass, entry=entry_data_retries)
-    assert conn_data_retries.retries == 4
-    assert conn_data_retries.retry_delay == 1.5
