@@ -145,7 +145,7 @@ async def async_get_dlms_client(
     return client
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(slots=True)
 class HardwareConfig:
     """Represents timeout and delay config for hardware interface."""
 
