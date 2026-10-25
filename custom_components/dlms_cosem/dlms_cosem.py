@@ -164,8 +164,6 @@ INTERFACE_CONFIG: dict[HardwareInterface, HardwareConfig] = {
 class DlmsConnection:
     """Represents a DLMS connection."""
 
-    _retries: int = DEFAULT_RETRIES
-    _retry_delay: float = DEFAULT_RETRY_DELAY
     client: AsyncMeterClient | None
     entry: ConfigEntry
     hass: HomeAssistant
