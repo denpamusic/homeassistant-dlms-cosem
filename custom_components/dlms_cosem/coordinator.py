@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 MAX_SLOW_ATTRIBUTES_PER_POLL: Final = 2
 
-RETRY_INTERVALS: Final = [
+RETRY_INTERVALS: list[timedelta] = [
     timedelta(seconds=30),
     timedelta(minutes=1),
     timedelta(minutes=5),
@@ -102,6 +102,7 @@ class DlmsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 f"Communication error while reading {key}: {err}"
             ) from err
 
+    @override
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from DLMS meter."""
         if not self.connection.connected:

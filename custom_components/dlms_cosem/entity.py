@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
-from typing import Any
+from typing import Any, override
 
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -50,6 +50,7 @@ class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
         super().__init__(coordinator)
         self.entity_description = description
 
+    @override
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to hass."""
         await super().async_added_to_hass()
@@ -59,6 +60,7 @@ class CosemEntity(CoordinatorEntity[DlmsCoordinator]):
             self.entity_description.scan_interval,
         )
 
+    @override
     async def async_will_remove_from_hass(self) -> None:
         """Run when entity will be removed from hass."""
         await super().async_will_remove_from_hass()
