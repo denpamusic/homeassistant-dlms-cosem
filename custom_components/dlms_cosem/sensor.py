@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import override
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -357,12 +358,15 @@ class CosemSensor(CosemEntity, SensorEntity):
 
     entity_description: CosemSensorEntityDescription
 
+    @override
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._attr_native_value = self.entity_description.value_fn(
-            self.coordinator.data.get(self.entity_description.key)
-        )
+        value = self.coordinator.data.get(self.entity_description.key)
+        if value is not None:
+            value = self.entity_description.value_fn(value)
+
+        self._attr_native_value = value
         self.async_write_ha_state()
 
 

@@ -139,7 +139,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_identify()
         except CannotConnect:
             errors["base"] = "cannot_connect"
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.exception("Unexpected exception")
             errors["base"] = "unknown"
 
@@ -183,7 +183,7 @@ class DlmsCosemConfigFlow(ConfigFlow, domain=DOMAIN):
                 client = await validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:

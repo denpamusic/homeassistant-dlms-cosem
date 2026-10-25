@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import cast
+from typing import cast, override
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -49,6 +49,7 @@ class CosemBinarySensor(CosemEntity, BinarySensorEntity):
 
     entity_description: CosemBinarySensorEntityDescription
 
+    @override
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
