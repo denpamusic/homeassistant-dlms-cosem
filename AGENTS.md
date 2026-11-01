@@ -60,10 +60,7 @@ Manual for AI agents working on `homeassistant-dlms-cosem`. Read fully before ch
 
 4.1. Feature work must be done on dedicated feature branches (`feature/<feature-name>`).
 
-4.2. Commit message format:
-- Always prefix with `[ai] ` for autonomous changes or `[human+ai] ` for collaborative changes (e.g., `[ai] Migrate integration tooling to uv.`).
-- Under 50 characters long (including prefix).
-- End in a full stop (`.`).
+4.2. Commits by AI agents: subject at most 50 characters, in imperative mood, ending with a period (no `[ai]` prefix). Commits must include Git trailers in the final paragraph separated by a blank line: `AI-Model: <model-id>` and `Co-Authored-By: <agent> <email>` (e.g. `Co-Authored-By: Antigravity <antigravity@denpa.pro>`). An extended body between the subject and trailers is encouraged.
 
 4.3. All commits must have a valid GPG signature (`git commit -S`).
 
