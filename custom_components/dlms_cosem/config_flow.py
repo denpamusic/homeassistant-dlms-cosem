@@ -68,7 +68,7 @@ STEP_USER_DATA_SCHEMA = probatio.Schema(
         probatio.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
         probatio.Required(
             CONF_HARDWARE_INTERFACE, default=DEFAULT_HARDWARE_INTERFACE
-        ): probatio.In(list(INTERFACE_CONFIG)),
+        ): probatio.In(INTERFACE_CONFIG),
     }
 )
 
